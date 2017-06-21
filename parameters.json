@@ -1,0 +1,10 @@
+{
+  "num_patterns": 4,
+  "training_test_ratio": 0.8,
+  "input_dimensions": 2,
+  "output_dimensions": 1,
+  "num_hidden_layers": 1,
+  "training_rate": 0.001,
+  "target_training_error": 0.2,
+  "max_epochs": 1000
+}
