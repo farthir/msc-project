@@ -47,7 +47,7 @@ neurons_l.append(config.params['input_dimensions'])
 
 if config.params['neuron_layers'] > 1:
     for l in range(1, config.params['neuron_layers']):
-        neurons_l.append(3)  # this needs to be input somehow
+        neurons_l.append(2)  # this needs to be input somehow
 
 # this may not always be the case but is set here
 neurons_l.append(config.params['output_dimensions'])
@@ -74,7 +74,9 @@ while (repeat):
         # add input pattern to 'output' of layer 0 (i.e. set the input to p)
         outputs_l_j[0].extend(input_pattern)
 
-    repeat = False
+        # forward pass
+        outputs_l_j = mlp_functions.forward_pass(neurons_l, weights_l_i_j,
+                                                 outputs_l_j)
 
     if (error < config.params['target_training_error'] or
             epoch == config.params['max_epochs']):
@@ -84,3 +86,5 @@ while (repeat):
 pprint(config.params)
 print(neurons_l)
 print(weights_l_i_j)
+print('after forward pass')
+print(outputs_l_j)
