@@ -5,14 +5,15 @@ import config
 import math
 import matplotlib.pyplot as plt
 
-filename = sys.argv[1]
 
 # read in patterns
-patterns = mlp_functions.read_patterns('data/%s.csv' % filename)
+data_filename = sys.argv[1]
+patterns = mlp_functions.read_patterns('data/%s.csv' % data_filename)
 
 # read in test patterns
 if (config.params['testing']):
-    test_patterns = mlp_functions.read_patterns('data/%s_test.csv' % filename)
+    test_patterns = mlp_functions.read_patterns('data/%s_test.csv' %
+                                                data_filename)
 
 if (config.params['validating'] and
         config.params['training_validation_ratio'] == 1):
