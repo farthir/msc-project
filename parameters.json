@@ -1,13 +1,12 @@
 {
-  "patterns": 4,
   "training_validation_ratio": 1.0,
-  "validating": true,
+  "validating": false,
   "input_dimensions": 2,
   "output_dimensions": 1,
   "hidden_layers_function": "sigmoid",
   "output_function": "sigmoid",
   "neuron_layers": 2,
-  "training_rate": 0.1,
-  "target_training_error": 0.2,
-  "max_epochs": 1000
+  "training_rate": 0.01,
+  "target_training_error": 0.1,
+  "max_epochs": 100
 }
