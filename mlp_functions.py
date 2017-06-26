@@ -138,7 +138,6 @@ def calculate_errors(neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
         reversed_errors_i = []
         # indexing starts at 1 for neurons
         reversed_errors_i.append(None)
-
         if (l != 0):
             for i in range(neuron_l):
                 # neuron count starts at 1
@@ -193,7 +192,7 @@ def update_weights(neurons_l, weights_l_i_j, errors_l_i, outputs_l_j):
                     i += 1
                     # plus one for bias
                     for j in range(neurons_l[l - 1] + 1):
-                        weights_l_i_j[l][i][j] += weights_l_i_j[l][i][j] + (
+                        weights_l_i_j[l][i][j] += (
                             config.params['training_rate'] *
                             errors_l_i[l][i] *
                             outputs_l_j[l - 1][j])
