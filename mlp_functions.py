@@ -1,27 +1,7 @@
 # mlp_functions module
 # assumes all input features preceed output(s)
-import csv
 import random
-import config
 import math
-
-
-def read_patterns(data_filename):
-
-    # num_output_neurons = num_output_dimensions -- no! -- depends on
-    # whether classifier or regression and then if classifier, the encoding
-
-    with open(data_filename, 'r', encoding='utf-8-sig') as data_file:
-        reader = csv.reader(data_file, quoting=csv.QUOTE_NONNUMERIC)
-        patterns = []
-        for row in reader:
-            patterns.append(row)
-
-        # randomise csv input to make sure training/validation sets are truely
-        # random
-        random.shuffle(patterns)
-
-    return patterns
 
 
 def initialise_bias(neuron_layers):
@@ -64,7 +44,7 @@ def initialise_weights(neurons_l):
     return weights_l_i_j
 
 
-def forward_pass(neurons_l, weights_l_i_j, outputs_l_j):
+def forward_pass(params, neurons_l, weights_l_i_j, outputs_l_j):
     L = len(neurons_l) - 1
     for l, neuron_l in enumerate(neurons_l):
         # skip first layer as it's already populated and has no neurons
@@ -82,18 +62,18 @@ def forward_pass(neurons_l, weights_l_i_j, outputs_l_j):
                 if (l < L):
                     # apply squashing to hidden layers
                     firing_function = get_firing_function(
-                        config.params['hidden_layers_function'])
+                        params['hidden_layers_function'])
                     outputs_l_j[l].append(firing_function(activation))
                 # set outputs in output layer
                 elif (l == L):
                     # check output layer function
-                    if (config.params['output_function'] == 'linear'):
+                    if (params['output_function'] == 'linear'):
                         # linear output
                         outputs_l_j[l].append(activation)
                     else:
                         # squashed output
                         firing_function = get_firing_function(
-                            config.params['output_function'])
+                            params['output_function'])
                         outputs_l_j[l].append(firing_function(activation))
     return outputs_l_j
 
@@ -130,7 +110,7 @@ def update_ms_error(neurons_l, error, teacher_i, outputs_l_j):
     return error
 
 
-def calculate_errors(neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
+def calculate_errors(params, neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
     L = len(neurons_l) - 1
     reversed_errors_l_i = []
     for l, neuron_l in reversed(list(enumerate(neurons_l))):
@@ -153,13 +133,13 @@ def calculate_errors(neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
                     # check output layer function
                     difference = 0.0
                     difference = teacher_i[i] - outputs_l_j[l][i]
-                    if (config.params['output_function'] == 'linear'):
+                    if (params['output_function'] == 'linear'):
                         # linear output
                         reversed_errors_i.append(difference)
                     else:
                         # squashed output
                         firing_function = get_firing_function(
-                            (config.params['output_function'] + '_derivative'))
+                            (params['output_function'] + '_derivative'))
                         reversed_errors_i.append(difference *
                                                  firing_function(activation))
                 # hidden layers
@@ -175,7 +155,7 @@ def calculate_errors(neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
                                       weights_l_i_j[l + 1][k][i])
                     # hidden layers squashing
                     firing_function = get_firing_function(
-                       config.params['hidden_layers_function'] + '_derivative')
+                       params['hidden_layers_function'] + '_derivative')
                     reversed_errors_i.append(error_sum *
                                              firing_function(activation))
         reversed_errors_l_i.append(reversed_errors_i)
@@ -183,7 +163,7 @@ def calculate_errors(neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
     return reversed_errors_l_i[::-1]
 
 
-def update_weights(neurons_l, weights_l_i_j, errors_l_i, outputs_l_j):
+def update_weights(params, neurons_l, weights_l_i_j, errors_l_i, outputs_l_j):
         for l, neuron_l in enumerate(neurons_l):
             # skip first layer as it has no neurons
             if (l != 0):
@@ -193,7 +173,7 @@ def update_weights(neurons_l, weights_l_i_j, errors_l_i, outputs_l_j):
                     # plus one for bias
                     for j in range(neurons_l[l - 1] + 1):
                         weights_l_i_j[l][i][j] += (
-                            config.params['training_rate'] *
+                            params['training_rate'] *
                             errors_l_i[l][i] *
                             outputs_l_j[l - 1][j])
         return weights_l_i_j

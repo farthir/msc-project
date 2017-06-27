@@ -4,24 +4,27 @@ import progressbar
 
 from mlp_network import Multilayer_perceptron as Mlp
 
-net = Mlp(sys.argv[1], sys.argv[2])
-
 successes = 0
-nets = int(sys.argv[3])
+nets = int(sys.argv[4])
 
-bar = progressbar.ProgressBar(maxval=nets, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+# initialise progress bar for console
+bar = progressbar.ProgressBar(
+    maxval=nets,
+    widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 bar.start()
+
 for t in range(nets):
     bar.update(t + 1)
-    net = Mlp(sys.argv[1], sys.argv[2])
-    if net.success:
+    net = Mlp(sys.argv[1], sys.argv[2], sys.argv[3])
+
+    if net.training_error_best < net.params['target_training_error']:
         successes += 1
 
 percentage_successful = (successes / nets) * 100
 print()
 print('Percentage successful: ', percentage_successful)
 
-if (sys.argv[4] == '1'):
+if (sys.argv[5] == '1'):
     print(net.testing_errors)
 
     plt.subplot(211)

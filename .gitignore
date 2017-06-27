@@ -1,6 +1,7 @@
 # Project related
 data/
 parameters/
+results/
 
 # MacOS
 .DS_Store
