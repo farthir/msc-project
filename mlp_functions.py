@@ -34,13 +34,12 @@ def initialise_weights(neurons_l):
                 else:
                     # add one to accomodate bias
                     for j in range(neurons_l[l - 1] + 1):
-                        weight = random.random()
+                        weight = random.uniform(-0.1, 0.1)
                         weights_j.append(weight)
 
                 weights_i_j.append(weights_j)
 
         weights_l_i_j.append(weights_i_j)
-
     return weights_l_i_j
 
 
@@ -88,13 +87,16 @@ def get_firing_function(function_name):
                     (math.pow((1 + math.exp(-activation)), 2)))
     elif function_name == 'tanh':
         def firing_function(activation):
-            return ((math.exp(activation) - math.exp(-activation)) /
-                    (math.exp(activation) + math.exp(-activation)))
+            return (math.tanh(activation))
     elif function_name == 'tanh_derivative':
         def firing_function(activation):
-            return (1 - math.pow(((math.exp(activation)
-                                 - math.exp(-activation)) /
-                    (math.exp(activation) + math.exp(-activation))), 2))
+            return (1 / math.pow(math.cosh(activation), 2))
+    elif function_name == 'lecun_tanh':
+        def firing_function(activation):
+            return (1.7159 * math.tanh((2/3) * activation))
+    elif function_name == 'lecun_tanh_derivative':
+        def firing_function(activation):
+            return (1.14393 / math.pow(math.cosh((2/3) * activation), 2))
 
     return firing_function
 

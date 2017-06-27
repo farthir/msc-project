@@ -17,6 +17,7 @@ epochs_success = 0
 average_epochs_success = 0
 for t in range(nets):
     bar.update(t + 1)
+    print()
     net = Mlp(sys.argv[1], sys.argv[2], sys.argv[3])
 
     if net.params['validating']:
@@ -32,6 +33,7 @@ percentage_successful = (successes / nets) * 100
 if successes > 0:
     average_epochs_success = epochs_success / successes
 print()
+print('Network architecture: ', net.neurons_l)
 print('Percentage successful: ', percentage_successful)
 print('Average epochs (successful): ', average_epochs_success)
 

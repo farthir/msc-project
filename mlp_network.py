@@ -5,6 +5,8 @@ import json
 import mlp_functions
 import io_functions
 
+import progressbar
+
 
 class Multilayer_perceptron(object):
     def __init__(self, parameters_filename, data_filename, results_filename):
@@ -78,9 +80,23 @@ class Multilayer_perceptron(object):
             training_error_best = 0.0
             epoch_best = 0
 
+        # initialise progress bar for console
+        bar = progressbar.ProgressBar(
+            maxval=self.params['max_epochs'],
+            widgets=[progressbar.Bar(
+                '=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
+
         while (repeat):
             training_error = 0.0
-
+            bar.update(epoch + 1)
+            '''
+            if (epoch % 500 == 0):
+                print()
+                print('epoch: ', epoch)
+                print('weights: ', self.weights_l_i_j[2][1])
+                # print('errors: ', errors_l_i[2][1])
+            '''
             for p in self.training_patterns:
                 # load pattern
                 input_pattern = p[:self.params['input_dimensions']]
@@ -187,10 +203,10 @@ class Multilayer_perceptron(object):
     def __testing_loop(self):
         # testing loop
         if (self.params['testing']):
-            testing_error = 0.0
             testing_errors = []
 
             for p in self.test_patterns:
+                testing_error = 0.0
                 # load pattern
                 input_pattern = p[:self.params['input_dimensions']]
                 # set bias 'output'
@@ -221,12 +237,12 @@ class Multilayer_perceptron(object):
 
                 testing_error = mlp_functions.update_ms_error(
                     self.neurons_l, testing_error, teacher_i, outputs_l_j)
+
+                # normalise testing error into [0,1] and convert to rms
+                testing_error = math.sqrt(testing_error / self.neurons_l[-1])
+
                 testing_errors.append(testing_error)
 
-            # normalise testing error into [0,1] and convert to rms
-            testing_error = math.sqrt(
-                testing_error / (
-                    self.neurons_l[-1] * len(self.test_patterns)))
             self.testing_errors = testing_errors
 
     def __save_results(self, results_filename):
