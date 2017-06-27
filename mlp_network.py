@@ -60,8 +60,12 @@ class Multilayer_perceptron(object):
         # initialise weights
         weights_l_i_j = mlp_functions.initialise_weights(neurons_l)
 
+        last_output = (self.params['input_dimensions'] +
+                       self.params['output_dimensions'])
+
         self.neurons_l = neurons_l
         self.weights_l_i_j = weights_l_i_j
+        self.last_output = last_output
 
     def __backpropagation_loop(self):
         # backpropagation loop
@@ -92,7 +96,8 @@ class Multilayer_perceptron(object):
                     outputs_l_j)
 
                 # update training_error
-                output_pattern = p[self.params['input_dimensions']:]
+                output_pattern = p[self.params['input_dimensions']:
+                                   self.last_output]
                 teacher_i = []
                 # account for i = 0
                 teacher_i.append(None)
@@ -137,7 +142,9 @@ class Multilayer_perceptron(object):
                         outputs_l_j)
 
                     # update validation error
-                    output_pattern = p[self.params['input_dimensions']:]
+                    output_pattern = p[self.params['input_dimensions']:
+                                       self.last_output]
+
                     teacher_i = []
                     # account for i = 0
                     teacher_i.append(None)
@@ -205,7 +212,8 @@ class Multilayer_perceptron(object):
                         outputs_l_j)
 
                 # update test error
-                output_pattern = p[self.params['input_dimensions']:]
+                output_pattern = p[self.params['input_dimensions']:
+                                   self.last_output]
                 teacher_i = []
                 # account for i = 0
                 teacher_i.append(None)
@@ -219,15 +227,18 @@ class Multilayer_perceptron(object):
             testing_error = math.sqrt(
                 testing_error / (
                     self.neurons_l[-1] * len(self.test_patterns)))
-        self.testing_errors = testing_errors
+            self.testing_errors = testing_errors
 
     def __save_results(self, results_filename):
         # save some data
         headers = ['epoch_end', 'training_error_end',
                    'validation_error_end', 'epoch_best',
                    'training_error_best', 'validation_error_best']
-        result = [self.epoch_end, self.training_error_end,
-                  self.validation_error_end, self.epoch_best,
-                  self.training_error_best, self.validation_error_best]
+        if self.params['validating']:
+            result = [self.epoch_end, self.training_error_end,
+                      self.validation_error_end, self.epoch_best,
+                      self.training_error_best, self.validation_error_best]
+        else:
+            result = [self.epoch_end, self.training_error_end]
         io_functions.write_result_row(
             'results/%s.csv' % results_filename, headers, result)
