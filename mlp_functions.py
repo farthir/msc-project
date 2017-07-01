@@ -4,10 +4,11 @@ import random
 import math
 
 
-def initialise_bias(neuron_layers):
+def initialise_bias(params):
     outputs_l_j = []
 
-    for l in range(neuron_layers):
+    # plus one for input layer
+    for l in range(len(params['hidden_nodes']) + 1):
         outputs_l_j.append([1.0])
 
     # set 0 output on first output neuron layer to None as this won't have bias
@@ -16,8 +17,13 @@ def initialise_bias(neuron_layers):
     return outputs_l_j
 
 
-def initialise_weights(neurons_l):
+def initialise_weights(params, neurons_l):
     weights_l_i_j = []
+
+    if params['fixed_weight_seed'] is not None:
+        rng = random.Random(params['fixed_weight_seed'])
+    else:
+        rng = random.Random()
 
     for l, neuron_l in enumerate(neurons_l):
         weights_i_j = []
@@ -34,7 +40,9 @@ def initialise_weights(neurons_l):
                 else:
                     # add one to accomodate bias
                     for j in range(neurons_l[l - 1] + 1):
-                        weight = random.uniform(-0.1, 0.1)
+                        weight = (params['weight_init_mean'] +
+                                  params['weight_init_range'] * (
+                                    (2 * rng.random()) - 1))
                         weights_j.append(weight)
 
                 weights_i_j.append(weights_j)
@@ -90,7 +98,7 @@ def get_firing_function(function_name):
             return (math.tanh(activation))
     elif function_name == 'tanh_derivative':
         def firing_function(activation):
-            return (1 / math.pow(math.cosh(activation), 2))
+            return (1 - math.pow(math.tanh(activation), 2))
     elif function_name == 'lecun_tanh':
         def firing_function(activation):
             return (1.7159 * math.tanh((2/3) * activation))

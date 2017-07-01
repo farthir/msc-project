@@ -1,15 +1,18 @@
 {
-  "training_validation_ratio": 1.0,
+  "training_validation_ratio": 0.8,
   "validating": true,
   "testing": true,
   "best_weights": true,
-  "input_dimensions": 2,
-  "output_dimensions": 1,
-  "hidden_layers_function": "sigmoid",
-  "output_function": "sigmoid",
-  "neuron_layers": 2,
-  "hidden_nodes": [2],
-  "training_rate": 0.1,
-  "target_training_error": 0,
-  "max_epochs": 10000
+  "input_dimensions": 4,
+  "output_dimensions": 3,
+  "weight_init_mean": 0,
+  "weight_init_range": 0.1,
+  "fixed_weight_seed": 1,
+  "hidden_layers_function": "tanh",
+  "output_function": "tanh",
+  "hidden_nodes": [7],
+  "training_rate": 0.01,
+  "target_training_error": 0.05,
+  "target_validation_error": 0.2,
+  "max_epochs": 500
 }

@@ -52,15 +52,15 @@ class Multilayer_perceptron(object):
         neurons_l = []
         neurons_l.append(self.params['input_dimensions'])
 
-        if self.params['neuron_layers'] > 1:
-            for l in range(self.params['neuron_layers'] - 1):
-                neurons_l.append(self.params['hidden_nodes'][l])
+        for l in range(len(self.params['hidden_nodes'])):
+            neurons_l.append(self.params['hidden_nodes'][l])
 
         # this may not always be the case but is set here
         neurons_l.append(self.params['output_dimensions'])
 
         # initialise weights
-        weights_l_i_j = mlp_functions.initialise_weights(neurons_l)
+        weights_l_i_j = mlp_functions.initialise_weights(self.params,
+                                                         neurons_l)
 
         last_output = (self.params['input_dimensions'] +
                        self.params['output_dimensions'])
@@ -86,23 +86,15 @@ class Multilayer_perceptron(object):
             widgets=[progressbar.Bar(
                 '=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
-
         while (repeat):
             training_error = 0.0
-            bar.update(epoch + 1)
-            '''
-            if (epoch % 500 == 0):
-                print()
-                print('epoch: ', epoch)
-                print('weights: ', self.weights_l_i_j[2][1])
-                # print('errors: ', errors_l_i[2][1])
-            '''
+            bar.update(epoch)
+
             for p in self.training_patterns:
                 # load pattern
                 input_pattern = p[:self.params['input_dimensions']]
                 # set bias 'output'
-                outputs_l_j = mlp_functions.initialise_bias(
-                    self.params['neuron_layers'])
+                outputs_l_j = mlp_functions.initialise_bias(self.params)
                 # add input pattern to 'output' of layer 0
                 outputs_l_j[0].extend(input_pattern)
 
@@ -133,9 +125,14 @@ class Multilayer_perceptron(object):
                     errors_l_i, outputs_l_j)
 
             # normalise training error into [0,1] and convert to rms
-            training_error = math.sqrt(
-                training_error / (
-                    self.neurons_l[-1] * len(self.training_patterns)))
+            if self.params['output_function'] == "sigmoid":
+                training_error = math.sqrt(
+                    training_error / (
+                        self.neurons_l[-1] * len(self.training_patterns)))
+            elif self.params['output_function'] == "tanh":
+                training_error = math.sqrt(
+                    training_error / (
+                        2 * self.neurons_l[-1] * len(self.training_patterns)))
 
             # write out epoch training_error
             training_errors.append(training_error)
@@ -147,8 +144,7 @@ class Multilayer_perceptron(object):
                     # load pattern
                     input_pattern = p[:self.params['input_dimensions']]
                     # set bias 'output'
-                    outputs_l_j = mlp_functions.initialise_bias(
-                        self.params['neuron_layers'])
+                    outputs_l_j = mlp_functions.initialise_bias(self.params)
                     # add input pattern to 'output' of layer 0
                     outputs_l_j[0].extend(input_pattern)
 
@@ -170,9 +166,14 @@ class Multilayer_perceptron(object):
                         outputs_l_j)
 
                 # normalise validation error into [0,1] and convert to rms
-                validation_error = math.sqrt(
-                    validation_error / (
-                        self.neurons_l[-1] * (len(self.validation_patterns))))
+                if self.params['output_function'] == "sigmoid":
+                    validation_error = math.sqrt(
+                        validation_error / (
+                            self.neurons_l[-1] * len(self.validation_patterns)))
+                elif self.params['output_function'] == "tanh":
+                    validation_error = math.sqrt(
+                        validation_error / (
+                            2 * self.neurons_l[-1] * len(self.validation_patterns)))
 
                 # make sure validation error is dropping
                 if (validation_error < validation_error_best):
@@ -182,6 +183,7 @@ class Multilayer_perceptron(object):
                     epoch_best = epoch
 
                 validation_errors.append(validation_error)
+
 
             epoch += 1
             if (training_error < self.params['target_training_error'] or
@@ -210,8 +212,7 @@ class Multilayer_perceptron(object):
                 # load pattern
                 input_pattern = p[:self.params['input_dimensions']]
                 # set bias 'output'
-                outputs_l_j = mlp_functions.initialise_bias(
-                    self.params['neuron_layers'])
+                outputs_l_j = mlp_functions.initialise_bias(self.params)
                 # add input pattern to 'output' of layer 0
                 outputs_l_j[0].extend(input_pattern)
 
@@ -239,7 +240,14 @@ class Multilayer_perceptron(object):
                     self.neurons_l, testing_error, teacher_i, outputs_l_j)
 
                 # normalise testing error into [0,1] and convert to rms
-                testing_error = math.sqrt(testing_error / self.neurons_l[-1])
+                if self.params['output_function'] == "sigmoid":
+                    testing_error = math.sqrt(
+                        testing_error / (
+                            self.neurons_l[-1]))
+                elif self.params['output_function'] == "tanh":
+                    testing_error = math.sqrt(
+                        testing_error / (
+                            2 * self.neurons_l[-1]))
 
                 testing_errors.append(testing_error)
 
@@ -247,14 +255,26 @@ class Multilayer_perceptron(object):
 
     def __save_results(self, results_filename):
         # save some data
-        headers = ['epoch_end', 'training_error_end',
+        headers = ['weight_init_mean', 'weight_init_range',
+                   'fixed_weight_seed', 'hidden_layers_function',
+                   'output_function', 'training_rate',
+                   'hidden_nodes', 'epoch_end', 'training_error_end',
                    'validation_error_end', 'epoch_best',
-                   'training_error_best', 'validation_error_best']
+                   'training_error_best', 'validation_error_best'
+                  ]
+        result = []
+        result.append(self.params['weight_init_mean'])
+        result.append(self.params['weight_init_range'])
+        result.append(self.params['fixed_weight_seed'])
+        result.append(self.params['hidden_layers_function'])
+        result.append(self.params['output_function'])
+        result.append(self.params['training_rate'])
+        result.append(self.params['hidden_nodes'])
         if self.params['validating']:
-            result = [self.epoch_end, self.training_error_end,
-                      self.validation_error_end, self.epoch_best,
-                      self.training_error_best, self.validation_error_best]
+            result.extend([self.epoch_end, self.training_error_end,
+                           self.validation_error_end, self.epoch_best,
+                           self.training_error_best, self.validation_error_best])
         else:
-            result = [self.epoch_end, self.training_error_end]
+            result.extend([self.epoch_end, self.training_error_end])
         io_functions.write_result_row(
             'results/%s.csv' % results_filename, headers, result)

@@ -2,6 +2,10 @@
 data/
 parameters/
 results/
+temp/
+
+# Dev environment
+.vscode/
 
 # MacOS
 .DS_Store
