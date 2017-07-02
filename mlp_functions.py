@@ -86,10 +86,10 @@ def forward_pass(params, neurons_l, weights_l_i_j, outputs_l_j):
 
 
 def get_firing_function(function_name):
-    if function_name == 'sigmoid':
+    if function_name == 'logistic':
         def firing_function(activation):
             return (1 / (1 + math.exp(-activation)))
-    elif function_name == 'sigmoid_derivative':
+    elif function_name == 'logistic_derivative':
         def firing_function(activation):
             return ((math.exp(-activation)) /
                     (math.pow((1 + math.exp(-activation)), 2)))

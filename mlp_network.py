@@ -166,7 +166,7 @@ class Multilayer_perceptron(object):
                         outputs_l_j)
 
                 # normalise validation error into [0,1] and convert to rms
-                if self.params['output_function'] == "sigmoid":
+                if self.params['output_function'] == "logistic":
                     validation_error = math.sqrt(
                         validation_error / (
                             self.neurons_l[-1] * len(self.validation_patterns)))
@@ -240,14 +240,14 @@ class Multilayer_perceptron(object):
                     self.neurons_l, testing_error, teacher_i, outputs_l_j)
 
                 # normalise testing error into [0,1] and convert to rms
-                if self.params['output_function'] == "sigmoid":
+                if self.params['output_function'] == "logistic":
                     testing_error = math.sqrt(
                         testing_error / (
                             self.neurons_l[-1]))
                 elif self.params['output_function'] == "tanh":
                     testing_error = math.sqrt(
                         testing_error / (
-                            2 * self.neurons_l[-1]))
+                            self.neurons_l[-1])) / 2
 
                 testing_errors.append(testing_error)
 
