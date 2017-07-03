@@ -8,7 +8,7 @@ def initialise_bias(params):
     outputs_l_j = []
 
     # plus one for input layer
-    for l in range(len(params['hidden_nodes']) + 1):
+    for _ in range(len(params['hidden_nodes']) + 1):
         outputs_l_j.append([1.0])
 
     # set 0 output on first output neuron layer to None as this won't have bias
