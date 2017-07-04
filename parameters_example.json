@@ -14,5 +14,7 @@
   "training_rate": 0.01,
   "target_training_error": 0.05,
   "target_validation_error": 0.2,
-  "max_epochs": 500
+  "max_epochs": 500,
+  "standardise_input": true,
+  "standardise_output": true
 }

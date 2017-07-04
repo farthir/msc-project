@@ -5,11 +5,11 @@ from pathlib import Path
 
 from mlp_network import Multilayer_perceptron as Mlp
 
-results_file = Path('results/%s.csv' % sys.argv[3])
+results_file = Path('results/%s.csv' % sys.argv[2])
 if results_file.is_file():
     print('ERROR: results file already exists')
 else:
-    nets = int(sys.argv[4])
+    nets = int(sys.argv[3])
 
     # initialise progress bar for console
     bar = progressbar.ProgressBar(
@@ -23,7 +23,7 @@ else:
     for t in range(nets):
         bar.update(t)
         print()
-        net = Mlp(sys.argv[1], sys.argv[2], sys.argv[3])
+        net = Mlp(sys.argv[1], sys.argv[2])
 
         if net.params['validating']:
             if net.validation_error_best < net.params['target_validation_error']:
@@ -42,7 +42,7 @@ else:
     print('Percentage successful: ', percentage_successful)
     print('Average epochs (successful): ', average_epochs_success)
 
-    if (sys.argv[5] == '1'):
+    if (sys.argv[4] == '1'):
         if net.params['testing']:
             print('Testing errors: ')
             print(net.testing_errors)
@@ -60,5 +60,5 @@ else:
         else:
             plt.plot(net.training_errors, 'b')
 
-        plt.savefig('results/%s.svg' % sys.argv[3])
+        plt.savefig('results/%s.svg' % sys.argv[2])
         plt.show()

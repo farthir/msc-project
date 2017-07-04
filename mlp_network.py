@@ -1,17 +1,19 @@
-# import mlp_functions
-# import config
+"""Module defining multi-layer perceptron backpropagation neural network class"""
 import math
 import json
+import progressbar
+
 import mlp_functions
 import io_functions
-
-import progressbar
+import data_processing
 
 
 class Multilayer_perceptron(object):
-    def __init__(self, parameters_filename, data_filename, results_filename):
-        self.__read_parameters(parameters_filename)
-        self.__read_data(data_filename)
+    def __init__(self, unified_filename, results_filename):
+        self.__read_parameters(unified_filename)
+        self.__read_structure(unified_filename)
+        self.__read_data(unified_filename)
+        self.__data_preprocessing()
         self.__initialise_network()
         self.__backpropagation_loop()
         self.__testing_loop()
@@ -21,6 +23,10 @@ class Multilayer_perceptron(object):
         with open('parameters/%s.json'
                   % parameters_filename) as parameters_file:
             self.params = json.load(parameters_file)
+
+    def __read_structure(self, structure_filename):
+        self.variable_types = io_functions.read_patterns_structure('data/%s_structure.csv'
+                                                                   % structure_filename)
 
     def __read_data(self, data_filename):
         patterns = io_functions.read_patterns('data/%s.csv' % data_filename)
@@ -44,6 +50,84 @@ class Multilayer_perceptron(object):
 
         elif not self.params['validating']:
             self.training_patterns = patterns
+        
+        # useful variable
+        last_output = (self.params['input_dimensions'] + self.params['output_dimensions'])
+        self.last_output = last_output
+
+    def __data_preprocessing(self):
+        """Method to standardise data"""
+
+        # training patterns
+        if self.params['standardise_input']:
+            input_training_patterns = (
+                [item[:self.params['input_dimensions']] for item in self.training_patterns])
+            input_training_standardiser = data_processing.Standardiser(
+                input_training_patterns, self.variable_types[:self.params['input_dimensions']])
+
+            input_training_standardiser.standardise_by_type()
+
+            # input_training_standardiser.patterns
+
+        if self.params['standardise_output']:
+            output_training_patterns = (
+                [item[self.params['input_dimensions']:self.last_output]
+                 for item in self.training_patterns])
+            output_training_standardiser = data_processing.Standardiser(
+                output_training_patterns,
+                self.variable_types[self.params['input_dimensions']:self.last_output])
+
+            output_training_standardiser.standardise_by_type()
+
+        # validation patterns
+        if self.params['validating']:
+            if self.params['standardise_input']:
+                input_validation_patterns = (
+                    [item[:self.params['input_dimensions']] for item in self.validation_patterns])
+                input_validation_standardiser = data_processing.Standardiser(
+                    input_validation_patterns,
+                    self.variable_types[:self.params['input_dimensions']],
+                    variables_mean=input_training_standardiser.variables_mean,
+                    variables_std=input_training_standardiser.variables_std)
+
+                input_validation_standardiser.standardise_by_type()
+
+            if self.params['standardise_output']:
+                output_validation_patterns = (
+                    [item[self.params['input_dimensions']:self.last_output]
+                     for item in self.validation_patterns])
+                output_validation_standardiser = data_processing.Standardiser(
+                    output_validation_patterns,
+                    self.variable_types[self.params['input_dimensions']:self.last_output],
+                    variables_mean=output_training_standardiser.variables_mean,
+                    variables_std=output_training_standardiser.variables_std)
+
+                output_validation_standardiser.standardise_by_type()
+
+        # test patterns
+        if self.params['testing']:
+            if self.params['standardise_input']:
+                input_test_patterns = (
+                    [item[:self.params['input_dimensions']] for item in self.test_patterns])
+                input_testing_standardiser = data_processing.Standardiser(
+                    input_test_patterns,
+                    self.variable_types[:self.params['input_dimensions']],
+                    variables_mean=input_training_standardiser.variables_mean,
+                    variables_std=input_training_standardiser.variables_std)
+
+                input_testing_standardiser.standardise_by_type()
+
+            if self.params['standardise_output']:
+                output_test_patterns = (
+                    [item[self.params['input_dimensions']:self.last_output]
+                     for item in self.test_patterns])
+                output_test_standardiser = data_processing.Standardiser(
+                    output_test_patterns,
+                    self.variable_types[self.params['input_dimensions']:self.last_output],
+                    variables_mean=output_training_standardiser.variables_mean,
+                    variables_std=output_training_standardiser.variables_std)
+
+                output_test_standardiser.standardise_by_type()
 
     def __initialise_network(self):
         # network initialisation
@@ -62,12 +146,8 @@ class Multilayer_perceptron(object):
         weights_l_i_j = mlp_functions.initialise_weights(self.params,
                                                          neurons_l)
 
-        last_output = (self.params['input_dimensions'] +
-                       self.params['output_dimensions'])
-
         self.neurons_l = neurons_l
         self.weights_l_i_j = weights_l_i_j
-        self.last_output = last_output
 
     def __backpropagation_loop(self):
         # backpropagation loop

@@ -3,6 +3,15 @@ import random
 
 from pathlib import Path
 
+def read_patterns_structure(structure_filepath):
+    """Function to read data structure file"""
+
+    with open(structure_filepath, 'r', encoding='utf-8-sig') as structure_file:
+        reader = csv.reader(structure_file)
+
+        structure = next(reader)
+
+    return structure
 
 def read_patterns(data_filepath):
 
@@ -10,7 +19,7 @@ def read_patterns(data_filepath):
     # whether classifier or regression and then if classifier, the encoding
 
     with open(data_filepath, 'r', encoding='utf-8-sig') as data_file:
-        reader = csv.reader(data_file, quoting=csv.QUOTE_NONNUMERIC)
+        reader = csv.reader(data_file)
         patterns = []
         for row in reader:
             patterns.append(row)
