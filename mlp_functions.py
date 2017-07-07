@@ -88,23 +88,25 @@ def forward_pass(params, neurons_l, weights_l_i_j, outputs_l_j):
 def get_firing_function(function_name):
     if function_name == 'logistic':
         def firing_function(activation):
-            return (1 / (1 + math.exp(-activation)))
+            return 1 / (1 + math.exp(-activation))
     elif function_name == 'logistic_derivative':
         def firing_function(activation):
             return ((math.exp(-activation)) /
                     (math.pow((1 + math.exp(-activation)), 2)))
     elif function_name == 'tanh':
         def firing_function(activation):
-            return (math.tanh(activation))
+            return math.tanh(activation)
     elif function_name == 'tanh_derivative':
         def firing_function(activation):
-            return (1 - math.pow(math.tanh(activation), 2))
+            return 1 - math.pow(math.tanh(activation), 2)
     elif function_name == 'lecun_tanh':
         def firing_function(activation):
-            return (1.7159 * math.tanh((2/3) * activation))
+            return 1.7159 * math.tanh((2/3) * activation)
     elif function_name == 'lecun_tanh_derivative':
         def firing_function(activation):
-            return (1.14393 / math.pow(math.cosh((2/3) * activation), 2))
+            return 1.14393 / math.pow(math.cosh((2/3) * activation), 2)
+    else:
+        print('ERROR: function type "' + function_name + '" not implemented.')
 
     return firing_function
 

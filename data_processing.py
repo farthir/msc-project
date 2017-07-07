@@ -1,5 +1,5 @@
 """Module containing classes and methods for data processing"""
-
+import copy
 import numpy as np
 import pandas as pd
 
@@ -11,6 +11,11 @@ class VariableTypeError(ProcessingError):
     """Raise error if type of variable not handled."""
     pass
 
+class NotFullyImplementedError(ProcessingError):
+    """Raise this error if there is an attempt to call functionality 
+    that is not fully implemented"""
+    pass
+
 class Standardiser(object):
     """Class to standardise input data.
     Assumes correctly formatted patterns.
@@ -20,8 +25,9 @@ class Standardiser(object):
     # choose from numeric, category, binary for each column
 
     def __init__(
-            self, patterns, variable_types, variables_mean=None, variables_std=None):
-        self.patterns = patterns
+            self, patterns_in, variable_types, variables_mean=None, variables_std=None):
+        self.patterns_in = patterns_in
+        self.patterns_out = copy.deepcopy(patterns_in)
         self.variable_types = variable_types
 
         if variables_mean is None and variables_std is None:
@@ -37,9 +43,14 @@ class Standardiser(object):
         """Method to standardise all patterns in class instance."""
 
         # loop through columns in data (currently ordered by row in list)
-        for i in range(len(self.variable_types)):
-            variable_data = [item[i] for item in self.patterns]
-            variable_type = self.variable_types[i]
+        # two counters, one for input structure and one for output structure
+        variable_position_out = 0
+        for variable_position_in in range(len(self.variable_types)):
+            variable_data = [item[variable_position_in] for item in self.patterns_in]
+            variable_type = self.variable_types[variable_position_in]
+
+            # usually one standardised variable for one variable
+            variable_count = 1
 
             if variable_type == 'numeric':
                 if self.training_data:
@@ -48,19 +59,31 @@ class Standardiser(object):
                     self.variables_std.append(std)
                 else:
                     standardised_data, mean, std = self.__standardise_numeric(
-                        variable_data, self.variables_mean[i], self.variables_std[i])
+                        variable_data,
+                        self.variables_mean[variable_position_out],
+                        self.variables_std[variable_position_out])
             elif variable_type == 'category_effects':
-                standardised_data = self.__standardise_category(variable_data)
+                raise VariableTypeError(
+                    'ERROR: categories not fully implemented. Disable exception at own risk.')
+                # also get a variable_count for categories as it will be more than
+                # input variable count
+                standardised_data, variable_count = self.__standardise_category(
+                    variable_data)
 
                 if self.training_data:
-                    self.variables_mean.append(None)
-                    self.variables_std.append(None)
+                    for _ in range(variable_count):
+                        self.variables_mean.append(None)
+                        self.variables_std.append(None)
             elif variable_type == 'category_dummy':
-                standardised_data = self.__standardise_category(variable_data, effects_coding=False)
+                raise VariableTypeError(
+                    'ERROR: categories not fully implemented. Disable exception at own risk.')
+                standardised_data, variable_count = self.__standardise_category(
+                    variable_data, effects_coding=False)
 
                 if self.training_data:
-                    self.variables_mean.append(None)
-                    self.variables_std.append(None)
+                    for _ in range(variable_count):
+                        self.variables_mean.append(None)
+                        self.variables_std.append(None)
             elif variable_type == 'binary':
                 standardised_data = self.__standardise_binary(variable_data)
 
@@ -68,18 +91,26 @@ class Standardiser(object):
                     self.variables_mean.append(None)
                     self.variables_std.append(None)
             elif variable_type == 'none':
-                standardised_data = variable_data
+                # serves as a way to disable standardisation for variables (e.g. on output)
+                standardised_data = [float(item) for item in variable_data]
+                
+                if self.training_data:
+                    for _ in range(variable_count):
+                        self.variables_mean.append(None)
+                        self.variables_std.append(None)
 
             else:
                 raise VariableTypeError(
                     'ERROR: variable type "' + variable_type + '" not implemented.')
 
-            for pattern in range(len(self.patterns)):
+            for pattern in range(len(self.patterns_in)):
                 # handle category data containing more than one row
                 if variable_type.startswith('category'):
-                    self.patterns[pattern][i:i+1] = standardised_data[pattern]
+                    self.patterns_out[pattern][
+                        variable_position_out:variable_position_out+1] = standardised_data[pattern]
                 else:
-                    self.patterns[pattern][i] = standardised_data[pattern]
+                    self.patterns_out[pattern][variable_position_out] = standardised_data[pattern]
+            variable_position_out += variable_count
 
     def __standardise_numeric(self, variable_data, mean=None, std=None):
         """Method that standardises numeric data using gaussian coding with
@@ -114,7 +145,8 @@ class Standardiser(object):
             pd_enc = pd.get_dummies(variable_data).astype(float)
 
         # return as a list of lists to replace and extend original data
-        return pd_enc.values.tolist()
+        # also return number of columns now used to categorisation
+        return pd_enc.values.tolist(), pd_enc.shape[1]
 
     def __standardise_binary(self, variable_data):
         """Method that standardises binary data by changing 0 to -1."""

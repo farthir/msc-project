@@ -7,8 +7,15 @@ import mlp_functions
 import io_functions
 import data_processing
 
+class MLPError(Exception):
+    """Base class for exceptions in this module."""
+    pass
 
-class Multilayer_perceptron(object):
+class FunctionTypeError(MLPError):
+    """Raise error if type of function not handled."""
+    pass
+
+class MLPNetwork(object):
     def __init__(self, unified_filename, results_filename):
         self.__read_parameters(unified_filename)
         self.__read_structure(unified_filename)
@@ -29,105 +36,69 @@ class Multilayer_perceptron(object):
                                                                    % structure_filename)
 
     def __read_data(self, data_filename):
-        patterns = io_functions.read_patterns('data/%s.csv' % data_filename)
+        # read in training/validation patterns
+        self.patterns = io_functions.read_patterns('data/%s.csv' % data_filename)
 
         # read in test patterns
         if (self.params['testing']):
             self.test_patterns = io_functions.read_patterns('data/%s_test.csv'
                                                             % data_filename)
 
-        if (self.params['validating'] and
-                self.params['training_validation_ratio'] == 1):
-            self.training_patterns = patterns
-            self.validation_patterns = patterns
-
-        elif (self.params['validating'] and
-                self.params['training_validation_ratio'] < 1):
-            num_training_patterns = int(
-                len(patterns) * self.params['training_validation_ratio'])
-            self.training_patterns = patterns[:num_training_patterns]
-            self.validation_patterns = patterns[num_training_patterns:]
-
-        elif not self.params['validating']:
-            self.training_patterns = patterns
-        
         # useful variable
-        last_output = (self.params['input_dimensions'] + self.params['output_dimensions'])
-        self.last_output = last_output
+        self.last_output = (self.params['input_dimensions'] + self.params['output_dimensions'])
 
     def __data_preprocessing(self):
-        """Method to standardise data"""
+        """Method to pre-process the data"""
 
+        # split the data into training and validation patterns first
+        if (self.params['validating'] and
+                self.params['training_validation_ratio'] == 1):
+            self.training_patterns = self.patterns
+            self.validation_patterns = self.patterns
+
+        elif (self.params['validating'] and
+              self.params['training_validation_ratio'] < 1):
+            num_training_patterns = int(
+                len(self.patterns) * self.params['training_validation_ratio'])
+            self.training_patterns = self.patterns[:num_training_patterns]
+            self.validation_patterns = self.patterns[num_training_patterns:]
+
+        elif not self.params['validating']:
+            self.training_patterns = self.patterns
+
+        # standardise the data
+        # WARN: Categorical standardisation is not implemented fully.
+        #       Categories need to be found across whole pattern set and proper
+        #       handling for test set if new categories are found as well as
+        #       totals for number of inputs and outputs.
         # training patterns
-        if self.params['standardise_input']:
-            input_training_patterns = (
-                [item[:self.params['input_dimensions']] for item in self.training_patterns])
-            input_training_standardiser = data_processing.Standardiser(
-                input_training_patterns, self.variable_types[:self.params['input_dimensions']])
+        training_standardiser = data_processing.Standardiser(
+            self.training_patterns, self.variable_types)
 
-            input_training_standardiser.standardise_by_type()
-
-            # input_training_standardiser.patterns
-
-        if self.params['standardise_output']:
-            output_training_patterns = (
-                [item[self.params['input_dimensions']:self.last_output]
-                 for item in self.training_patterns])
-            output_training_standardiser = data_processing.Standardiser(
-                output_training_patterns,
-                self.variable_types[self.params['input_dimensions']:self.last_output])
-
-            output_training_standardiser.standardise_by_type()
+        training_standardiser.standardise_by_type()
+        self.training_patterns = training_standardiser.patterns_out
 
         # validation patterns
         if self.params['validating']:
-            if self.params['standardise_input']:
-                input_validation_patterns = (
-                    [item[:self.params['input_dimensions']] for item in self.validation_patterns])
-                input_validation_standardiser = data_processing.Standardiser(
-                    input_validation_patterns,
-                    self.variable_types[:self.params['input_dimensions']],
-                    variables_mean=input_training_standardiser.variables_mean,
-                    variables_std=input_training_standardiser.variables_std)
+            validation_standardiser = data_processing.Standardiser(
+                self.validation_patterns,
+                self.variable_types,
+                variables_mean=training_standardiser.variables_mean,
+                variables_std=training_standardiser.variables_std)
 
-                input_validation_standardiser.standardise_by_type()
-
-            if self.params['standardise_output']:
-                output_validation_patterns = (
-                    [item[self.params['input_dimensions']:self.last_output]
-                     for item in self.validation_patterns])
-                output_validation_standardiser = data_processing.Standardiser(
-                    output_validation_patterns,
-                    self.variable_types[self.params['input_dimensions']:self.last_output],
-                    variables_mean=output_training_standardiser.variables_mean,
-                    variables_std=output_training_standardiser.variables_std)
-
-                output_validation_standardiser.standardise_by_type()
+            validation_standardiser.standardise_by_type()
+            self.validation_patterns = validation_standardiser.patterns_out
 
         # test patterns
         if self.params['testing']:
-            if self.params['standardise_input']:
-                input_test_patterns = (
-                    [item[:self.params['input_dimensions']] for item in self.test_patterns])
-                input_testing_standardiser = data_processing.Standardiser(
-                    input_test_patterns,
-                    self.variable_types[:self.params['input_dimensions']],
-                    variables_mean=input_training_standardiser.variables_mean,
-                    variables_std=input_training_standardiser.variables_std)
+            test_standardiser = data_processing.Standardiser(
+                self.test_patterns,
+                self.variable_types,
+                variables_mean=training_standardiser.variables_mean,
+                variables_std=training_standardiser.variables_std)
 
-                input_testing_standardiser.standardise_by_type()
-
-            if self.params['standardise_output']:
-                output_test_patterns = (
-                    [item[self.params['input_dimensions']:self.last_output]
-                     for item in self.test_patterns])
-                output_test_standardiser = data_processing.Standardiser(
-                    output_test_patterns,
-                    self.variable_types[self.params['input_dimensions']:self.last_output],
-                    variables_mean=output_training_standardiser.variables_mean,
-                    variables_std=output_training_standardiser.variables_std)
-
-                output_test_standardiser.standardise_by_type()
+            test_standardiser.standardise_by_type()
+            self.test_patterns = test_standardiser.patterns_out
 
     def __initialise_network(self):
         # network initialisation
@@ -205,14 +176,33 @@ class Multilayer_perceptron(object):
                     errors_l_i, outputs_l_j)
 
             # normalise training error into [0,1] and convert to rms
-            if self.params['output_function'] == "sigmoid":
+            if self.params['output_function'] == "logistic":
+                # function output [0,1]
+                # assumes training values {0,1}
                 training_error = math.sqrt(
                     training_error / (
                         self.neurons_l[-1] * len(self.training_patterns)))
             elif self.params['output_function'] == "tanh":
+                # function output [-1,1]
+                # assumes training values {-1,1}
                 training_error = math.sqrt(
                     training_error / (
                         2 * self.neurons_l[-1] * len(self.training_patterns)))
+            elif self.params['output_function'] == "lecun_tanh":
+                # function output [-1.7159,1.7159]
+                # assumes training values {-1,1}
+                training_error = math.sqrt(
+                    training_error / (
+                        3.4318 * self.neurons_l[-1] * len(self.training_patterns)))
+            elif self.params['output_function'] == "linear":
+                # function output [-1,1]
+                # assumes training values {-1,1}
+                training_error = math.sqrt(
+                    training_error / (
+                        self.neurons_l[-1] * len(self.training_patterns)))
+            else:
+                raise FunctionTypeError(
+                    'ERROR: function type "' + self.params['output_function'] + '" not implemented.')
 
             # write out epoch training_error
             training_errors.append(training_error)
