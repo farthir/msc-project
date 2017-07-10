@@ -3,6 +3,7 @@
 import random
 import math
 
+import mlp_exceptions
 
 def initialise_bias(params):
     outputs_l_j = []
@@ -189,3 +190,33 @@ def update_weights(params, neurons_l, weights_l_i_j, errors_l_i, outputs_l_j):
                             errors_l_i[l][i] *
                             outputs_l_j[l - 1][j])
         return weights_l_i_j
+
+def calculate_rms_error(output_function, training_error, num_output_neurons, num_patterns):
+    """Cost function that calculates the rms error. Scales error depending on function used."""
+    if output_function == "logistic":
+        # function output [0,1]
+        # assumes training values {0,1}
+        training_error = math.sqrt(
+            training_error / (
+                num_output_neurons * num_patterns))
+    elif output_function == "tanh":
+        # function output [-1,1]
+        # assumes training values {-1,1}
+        training_error = math.sqrt(
+            training_error / (
+                4 * num_output_neurons * num_patterns))
+    elif output_function == "lecun_tanh":
+        # function output [-1.7159,1.7159]
+        # assumes training values {-1,1}
+        training_error = math.sqrt(
+            training_error / (
+                7.37611281 * num_output_neurons * num_patterns))
+    elif output_function == "linear":
+        training_error = math.sqrt(
+            training_error / (
+                num_output_neurons * num_patterns))
+    else:
+        raise mlp_exceptions.FunctionTypeError(
+            'ERROR: function type "' + output_function + '" not implemented.')
+
+    return training_error

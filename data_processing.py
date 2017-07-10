@@ -121,8 +121,8 @@ class Standardiser(object):
         # calculate mean and standard deviation if training else use existing (provided)
         if self.training_data:
             np_array = np.array(variable_data)
-            mean = np.mean(np_array)
-            std = np.std(np_array)
+            mean = np.mean(np_array).item()
+            std = np.std(np_array).item()
 
         # return new list containing standardised data and
         # mean and std for use on other data

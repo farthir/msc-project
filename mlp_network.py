@@ -1,19 +1,12 @@
 """Module defining multi-layer perceptron backpropagation neural network class"""
-import math
 import json
 import progressbar
+
+import matplotlib.pyplot as plt
 
 import mlp_functions
 import io_functions
 import data_processing
-
-class MLPError(Exception):
-    """Base class for exceptions in this module."""
-    pass
-
-class FunctionTypeError(MLPError):
-    """Raise error if type of function not handled."""
-    pass
 
 class MLPNetwork(object):
     def __init__(self, unified_filename, results_filename):
@@ -40,7 +33,7 @@ class MLPNetwork(object):
         self.patterns = io_functions.read_patterns('data/%s.csv' % data_filename)
 
         # read in test patterns
-        if (self.params['testing']):
+        if self.params['testing']:
             self.test_patterns = io_functions.read_patterns('data/%s_test.csv'
                                                             % data_filename)
 
@@ -77,6 +70,8 @@ class MLPNetwork(object):
 
         training_standardiser.standardise_by_type()
         self.training_patterns = training_standardiser.patterns_out
+
+        print(self.training_patterns)
 
         # validation patterns
         if self.params['validating']:
@@ -121,6 +116,21 @@ class MLPNetwork(object):
         self.weights_l_i_j = weights_l_i_j
 
     def __backpropagation_loop(self):
+        # TEMP - weights store
+        weights_epoch_1_1_0=[]
+        weights_epoch_1_1_1=[]
+        weights_epoch_1_1_2=[]
+        weights_epoch_1_2_0=[]
+        weights_epoch_1_2_1=[]
+        weights_epoch_1_2_2=[]
+        weights_epoch_2_1_0=[]
+        weights_epoch_2_1_1=[]
+        weights_epoch_2_1_2=[]
+        errors_epoch_1_1=[]
+        errors_epoch_1_2=[]
+        errors_epoch_2_1=[]
+        
+
         # backpropagation loop
         epoch = 0
         training_errors = []
@@ -137,7 +147,7 @@ class MLPNetwork(object):
             widgets=[progressbar.Bar(
                 '=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
-        while (repeat):
+        while repeat:
             training_error = 0.0
             bar.update(epoch)
 
@@ -175,37 +185,31 @@ class MLPNetwork(object):
                     self.params, self.neurons_l, self.weights_l_i_j,
                     errors_l_i, outputs_l_j)
 
-            # normalise training error into [0,1] and convert to rms
-            if self.params['output_function'] == "logistic":
-                # function output [0,1]
-                # assumes training values {0,1}
-                training_error = math.sqrt(
-                    training_error / (
-                        self.neurons_l[-1] * len(self.training_patterns)))
-            elif self.params['output_function'] == "tanh":
-                # function output [-1,1]
-                # assumes training values {-1,1}
-                training_error = math.sqrt(
-                    training_error / (
-                        2 * self.neurons_l[-1] * len(self.training_patterns)))
-            elif self.params['output_function'] == "lecun_tanh":
-                # function output [-1.7159,1.7159]
-                # assumes training values {-1,1}
-                training_error = math.sqrt(
-                    training_error / (
-                        3.4318 * self.neurons_l[-1] * len(self.training_patterns)))
-            elif self.params['output_function'] == "linear":
-                # function output [-1,1]
-                # assumes training values {-1,1}
-                training_error = math.sqrt(
-                    training_error / (
-                        self.neurons_l[-1] * len(self.training_patterns)))
-            else:
-                raise FunctionTypeError(
-                    'ERROR: function type "' + self.params['output_function'] + '" not implemented.')
+            # calculate rms training error
+            training_error = mlp_functions.calculate_rms_error(
+                self.params['output_function'],
+                training_error,
+                self.neurons_l[-1],
+                len(self.training_patterns)
+            )
 
             # write out epoch training_error
             training_errors.append(training_error)
+
+            # TEMP
+            if (epoch % 100 == 0):
+                weights_epoch_1_1_0.append(self.weights_l_i_j[1][1][0])
+                weights_epoch_1_1_1.append(self.weights_l_i_j[1][1][1])
+                weights_epoch_1_1_2.append(self.weights_l_i_j[1][1][2])
+                weights_epoch_1_2_0.append(self.weights_l_i_j[1][2][0])
+                weights_epoch_1_2_1.append(self.weights_l_i_j[1][2][1])
+                weights_epoch_1_2_2.append(self.weights_l_i_j[1][2][2])
+                weights_epoch_2_1_0.append(self.weights_l_i_j[2][1][0])
+                weights_epoch_2_1_1.append(self.weights_l_i_j[2][1][1])
+                weights_epoch_2_1_2.append(self.weights_l_i_j[2][1][2])
+                errors_epoch_1_1.append(errors_l_i[1][1])
+                errors_epoch_1_2.append(errors_l_i[1][2])
+                errors_epoch_2_1.append(errors_l_i[2][1])
 
             if self.params['validating']:
                 validation_error = 0.0
@@ -235,18 +239,16 @@ class MLPNetwork(object):
                         self.neurons_l, validation_error, teacher_i,
                         outputs_l_j)
 
-                # normalise validation error into [0,1] and convert to rms
-                if self.params['output_function'] == "logistic":
-                    validation_error = math.sqrt(
-                        validation_error / (
-                            self.neurons_l[-1] * len(self.validation_patterns)))
-                elif self.params['output_function'] == "tanh":
-                    validation_error = math.sqrt(
-                        validation_error / (
-                            2 * self.neurons_l[-1] * len(self.validation_patterns)))
+                # calculate rms validation error
+                validation_error = mlp_functions.calculate_rms_error(
+                    self.params['output_function'],
+                    validation_error,
+                    self.neurons_l[-1],
+                    len(self.validation_patterns)
+                )
 
                 # make sure validation error is dropping
-                if (validation_error < validation_error_best):
+                if validation_error < validation_error_best:
                     validation_error_best = validation_error
                     best_weights_l_i_j = list(self.weights_l_i_j)
                     training_error_best = training_error
@@ -272,9 +274,22 @@ class MLPNetwork(object):
             self.validation_error_best = validation_error_best
             self.epoch_best = epoch_best
 
+        plt.subplot(211)
+        plt.xlabel('Epoch*100')
+        plt.ylabel('Weight')
+        plt.plot(weights_epoch_1_1_0, 'bs', weights_epoch_1_1_1, 'b--', weights_epoch_1_1_2, 'b^',
+                 weights_epoch_1_2_0, 'rs', weights_epoch_1_2_1, 'r--', weights_epoch_1_2_2, 'r^',
+                 weights_epoch_2_1_0, 'gs', weights_epoch_2_1_1, 'g--', weights_epoch_2_1_2, 'g^', ms=1)
+
+        plt.subplot(212)
+        plt.xlabel('Epoch*100')
+        plt.ylabel('Error')
+        plt.plot(errors_epoch_1_1, 'b', errors_epoch_1_2, 'r', errors_epoch_2_1, 'g', ms=1)
+        plt.show()
+
     def __testing_loop(self):
         # testing loop
-        if (self.params['testing']):
+        if self.params['testing']:
             testing_errors = []
 
             for p in self.test_patterns:
@@ -288,7 +303,7 @@ class MLPNetwork(object):
 
                 # forward pass
                 # use weight at lowest validation error
-                if (self.params['validating'] and self.params['best_weights']):
+                if self.params['validating'] and self.params['best_weights']:
                     outputs_l_j = mlp_functions.forward_pass(
                         self.params, self.neurons_l, self.best_weights_l_i_j,
                         outputs_l_j)
@@ -298,9 +313,12 @@ class MLPNetwork(object):
                         self.params, self.neurons_l, self.weights_l_i_j,
                         outputs_l_j)
 
+                print(outputs_l_j[len(self.neurons_l) - 1])
+
                 # update test error
                 output_pattern = p[self.params['input_dimensions']:
                                    self.last_output]
+
                 teacher_i = []
                 # account for i = 0
                 teacher_i.append(None)
@@ -309,15 +327,13 @@ class MLPNetwork(object):
                 testing_error = mlp_functions.update_ms_error(
                     self.neurons_l, testing_error, teacher_i, outputs_l_j)
 
-                # normalise testing error into [0,1] and convert to rms
-                if self.params['output_function'] == "logistic":
-                    testing_error = math.sqrt(
-                        testing_error / (
-                            self.neurons_l[-1]))
-                elif self.params['output_function'] == "tanh":
-                    testing_error = math.sqrt(
-                        testing_error / (
-                            self.neurons_l[-1])) / 2
+                # calculate rms testing error
+                testing_error = mlp_functions.calculate_rms_error(
+                    self.params['output_function'],
+                    testing_error,
+                    self.neurons_l[-1],
+                    1
+                )
 
                 testing_errors.append(testing_error)
 
