@@ -105,7 +105,7 @@ def get_firing_function(function_name):
             return 1.7159 * math.tanh((2/3) * activation)
     elif function_name == 'lecun_tanh_derivative':
         def firing_function(activation):
-            return 1.14393 / math.pow(math.cosh((2/3) * activation), 2)
+            return 1.14393 * (1 - math.pow(math.tanh((2/3) * activation), 2))
     else:
         print('ERROR: function type "' + function_name + '" not implemented.')
 

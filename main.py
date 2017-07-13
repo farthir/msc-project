@@ -44,13 +44,10 @@ else:
 
     if sys.argv[4] == '1':
         if net.params['testing']:
-            print('Testing errors: ')
-            print(net.testing_errors)
-
             plt.subplot(212)
             plt.xlabel('Error')
             plt.ylabel('Number')
-            plt.hist(net.testing_errors, 10, (0, 1))
+            plt.hist(net.testing_errors, 10)
 
         plt.subplot(211)
         plt.xlabel('Epoch')

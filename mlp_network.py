@@ -10,6 +10,8 @@ import data_processing
 
 class MLPNetwork(object):
     def __init__(self, unified_filename, results_filename):
+        self.results_filename = results_filename
+
         self.__read_parameters(unified_filename)
         self.__read_structure(unified_filename)
         self.__read_data(unified_filename)
@@ -17,7 +19,9 @@ class MLPNetwork(object):
         self.__initialise_network()
         self.__backpropagation_loop()
         self.__testing_loop()
-        self.__save_results(results_filename)
+
+        if self.params['save_summary']:
+            self.__save_results(results_filename)
 
     def __read_parameters(self, parameters_filename):
         with open('parameters/%s.json'
@@ -117,21 +121,6 @@ class MLPNetwork(object):
         self.weights_l_i_j = weights_l_i_j
 
     def __backpropagation_loop(self):
-        # TEMP - weights store
-        weights_epoch_1_1_0=[]
-        weights_epoch_1_1_1=[]
-        weights_epoch_1_1_2=[]
-        weights_epoch_1_2_0=[]
-        weights_epoch_1_2_1=[]
-        weights_epoch_1_2_2=[]
-        weights_epoch_2_1_0=[]
-        weights_epoch_2_1_1=[]
-        weights_epoch_2_1_2=[]
-        errors_epoch_1_1=[]
-        errors_epoch_1_2=[]
-        errors_epoch_2_1=[]
-        
-
         # backpropagation loop
         epoch = 0
         training_errors = []
@@ -197,20 +186,29 @@ class MLPNetwork(object):
             # write out epoch training_error
             training_errors.append(training_error)
 
-            # TEMP
-            if (epoch % 100 == 0):
-                weights_epoch_1_1_0.append(self.weights_l_i_j[1][1][0])
-                weights_epoch_1_1_1.append(self.weights_l_i_j[1][1][1])
-                weights_epoch_1_1_2.append(self.weights_l_i_j[1][1][2])
-                weights_epoch_1_2_0.append(self.weights_l_i_j[1][2][0])
-                weights_epoch_1_2_1.append(self.weights_l_i_j[1][2][1])
-                weights_epoch_1_2_2.append(self.weights_l_i_j[1][2][2])
-                weights_epoch_2_1_0.append(self.weights_l_i_j[2][1][0])
-                weights_epoch_2_1_1.append(self.weights_l_i_j[2][1][1])
-                weights_epoch_2_1_2.append(self.weights_l_i_j[2][1][2])
-                errors_epoch_1_1.append(errors_l_i[1][1])
-                errors_epoch_1_2.append(errors_l_i[1][2])
-                errors_epoch_2_1.append(errors_l_i[2][1])
+            # Write out weights and errors if specified
+            if self.params['save_network']:
+                if epoch % self.params['save_network_resolution'] == 0:
+                    # append results to file
+                    headers = (['epoch'] +
+                                ['weight_%s_%s_%s' % (l+1, i+1, j)
+                                    for l in range(len(self.weights_l_i_j[1:]))
+                                    for i in range(len(self.weights_l_i_j[l+1][1:]))
+                                    for j in range(len(self.weights_l_i_j[l+1][i+1]))] +
+                                ['error_%s_%s' % (l+1, i+1)
+                                    for l in range(len(errors_l_i[1:]))
+                                    for i in range(len(errors_l_i[l+1][1:]))])
+
+                    result = [epoch]
+                    result.extend(
+                        [j for l in range(len(self.weights_l_i_j[1:]))
+                        for i in range(len(self.weights_l_i_j[l+1][1:]))
+                        for j in self.weights_l_i_j[l+1][i+1]])
+                    result.extend(
+                        [i for l in range(len(errors_l_i[1:]))
+                        for i in errors_l_i[l+1][1:]])
+
+                    io_functions.write_result_row('results/%s_weights.csv' % self.results_filename, headers, result)
 
             if self.params['validating']:
                 validation_error = 0.0
@@ -275,19 +273,6 @@ class MLPNetwork(object):
             self.validation_error_best = validation_error_best
             self.epoch_best = epoch_best
 
-        plt.subplot(211)
-        plt.xlabel('Epoch*100')
-        plt.ylabel('Weight')
-        plt.plot(weights_epoch_1_1_0, 'b', weights_epoch_1_1_1, 'b:', weights_epoch_1_1_2, 'b--',
-                 weights_epoch_1_2_0, 'r', weights_epoch_1_2_1, 'r:', weights_epoch_1_2_2, 'r--',
-                 weights_epoch_2_1_0, 'g', weights_epoch_2_1_1, 'g:', weights_epoch_2_1_2, 'g--', ms=1)
-
-        plt.subplot(212)
-        plt.xlabel('Epoch*100')
-        plt.ylabel('Error')
-        plt.plot(errors_epoch_1_1, 'b', errors_epoch_1_2, 'r', errors_epoch_2_1, 'g', ms=1)
-        #plt.show()
-
     def __testing_loop(self):
         # testing loop
         if self.params['testing']:
@@ -297,6 +282,7 @@ class MLPNetwork(object):
                 testing_error = 0.0
                 # load pattern
                 input_pattern = p[:self.params['input_dimensions']]
+
                 # set bias 'output'
                 outputs_l_j = mlp_functions.initialise_bias(self.params)
                 # add input pattern to 'output' of layer 0
@@ -313,9 +299,6 @@ class MLPNetwork(object):
                     outputs_l_j = mlp_functions.forward_pass(
                         self.params, self.neurons_l, self.weights_l_i_j,
                         outputs_l_j)
-
-                #print("test outputs: ")
-                #print(outputs_l_j[len(self.neurons_l) - 1])
 
                 # update test error
                 output_pattern = p[self.params['input_dimensions']:
@@ -338,6 +321,16 @@ class MLPNetwork(object):
                 )
 
                 testing_errors.append(testing_error)
+
+                # append results to file
+                if self.params['save_testing']:
+                    headers = (['input_%s' % i for i in range(len(input_pattern))] +
+                            ['output_%s' % i for i in range(len(output_pattern))] +
+                            ['test_output_%s' % i for i in range(len(outputs_l_j[-1][1:]))] +
+                            ['testing_error']
+                            )
+                    result = p + outputs_l_j[-1][1:] + [testing_error]
+                    io_functions.write_result_row('results/%s_testing.csv' % self.results_filename, headers, result)
 
             self.testing_errors = testing_errors
 
