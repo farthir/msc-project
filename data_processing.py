@@ -22,7 +22,7 @@ class Standardiser(object):
     """
 
     # variable types determine how the standardiser handles the data
-    # choose from numeric, category, binary for each column
+    # choose from numeric, category, binary, none, or float type for each column
 
     def __init__(
             self, patterns_in, variable_types, variables_mean=None, variables_std=None):
@@ -52,7 +52,9 @@ class Standardiser(object):
             # usually one standardised variable for one variable
             variable_count = 1
 
-            if variable_type == 'numeric':
+            if self.__is_scale_type(variable_type):
+                standardised_data = self.__scale(variable_data, float(variable_type))
+            elif variable_type == 'numeric':
                 if self.training_data:
                     standardised_data, mean, std = self.__standardise_numeric(variable_data)
                     self.variables_mean.append(mean)
@@ -153,3 +155,90 @@ class Standardiser(object):
         # return new list containing standardised data
 
         return [float((-1 if item == '0' else 1)) for item in variable_data]
+
+    def __scale(self, variable_data, multiplier):
+        """Method that applies linear scaling to data"""
+        return [float(item * multiplier) for item in variable_data]
+
+    def __is_scale_type(self, variable_type):
+        """Method that checks to see if variable_type is a float"""
+        try:
+            float(variable_type)
+            return True
+        except ValueError:
+            return False
+
+class Destandardiser(object):
+    """Class to reverse the standardisation process to produce interpretable outputs.
+    Assumes correctly formatted patterns.
+    """
+
+    # variable types determine how the destandardiser handles the data
+    # choose from numeric, category, binary, none, or float type for each column
+
+    def __init__(
+            self, patterns_in, variable_types, variables_mean, variables_std):
+        self.patterns_in = patterns_in
+        self.patterns_out = copy.deepcopy(patterns_in)
+        self.variable_types = variable_types
+
+        self.variables_mean = variables_mean
+        self.variables_std = variables_std
+
+    def destandardise_by_type(self):
+        """Method to destandardise all patterns in class instance."""
+
+        # loop through columns in data (currently ordered by row in list)
+        # two counters, one for input structure and one for output structure
+        variable_position_out = 0
+        for variable_position_in in range(len(self.variable_types)):
+            variable_data = [item[variable_position_in] for item in self.patterns_in]
+            variable_type = self.variable_types[variable_position_in]
+
+            # usually one standardised variable for one variable
+            variable_count = 1
+
+            if self.__is_scale_type(variable_type):
+                destandardised_data = self.__descale(variable_data, float(variable_type))
+            elif variable_type == 'numeric':
+                destandardised_data = self.__destandardise_numeric(
+                    variable_data,
+                    self.variables_mean[variable_position_out],
+                    self.variables_std[variable_position_out])
+            elif variable_type == 'binary':
+                destandardised_data = self.__destandardise_binary(variable_data)
+            elif variable_type == 'none':
+                # serves as a way to disable destandardisation for variables (e.g. on output)
+                destandardised_data = variable_data
+            else:
+                raise VariableTypeError(
+                    'ERROR: variable type "' + variable_type + '" not implemented.')
+
+            for pattern in range(len(self.patterns_in)):
+                self.patterns_out[pattern][variable_position_out] = destandardised_data[pattern]
+            variable_position_out += variable_count
+
+    def __destandardise_numeric(self, variable_data, mean, std):
+        """Method that destandardises numeric data using gaussian coding with
+        mean and standard deviation."""
+
+        # return new list containing destandardised data
+        return [((item * std) + mean) for item in variable_data]
+
+    def __destandardise_binary(self, variable_data):
+        """Method that destandardises binary data by changing -1 to 0."""
+        # return new list containing destandardised data
+
+        return [float((0 if item == -1 else 1)) for item in variable_data]
+
+    def __descale(self, variable_data, multiplier):
+        """Method that reverses the linear scaling applied during data preprocessing"""
+        return [float(item / multiplier) for item in variable_data]
+
+    def __is_scale_type(self, variable_type):
+        """Method that checks to see if variable_type is a float"""
+        try:
+            float(variable_type)
+            return True
+        except ValueError:
+            return False

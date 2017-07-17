@@ -75,9 +75,6 @@ class MLPNetwork(object):
         training_standardiser.standardise_by_type()
         self.training_patterns = training_standardiser.patterns_out
 
-        #print("training pattern: ")
-        #print(self.training_patterns)
-
         # validation patterns
         if self.params['validating']:
             validation_standardiser = data_processing.Standardiser(
@@ -277,6 +274,7 @@ class MLPNetwork(object):
         # testing loop
         if self.params['testing']:
             testing_errors = []
+            all_outputs_l_j = []
 
             for p in self.test_patterns:
                 testing_error = 0.0
@@ -320,18 +318,22 @@ class MLPNetwork(object):
                     1
                 )
 
+                all_outputs_l_j.append(outputs_l_j)
                 testing_errors.append(testing_error)
 
-                # append results to file
-                if self.params['save_testing']:
-                    headers = (['input_%s' % i for i in range(len(input_pattern))] +
-                            ['output_%s' % i for i in range(len(output_pattern))] +
-                            ['test_output_%s' % i for i in range(len(outputs_l_j[-1][1:]))] +
-                            ['testing_error']
-                            )
-                    result = p + outputs_l_j[-1][1:] + [testing_error]
+            # append testing results to file
+            if self.params['save_testing']:
+                headers = (['input_%s' % i for i in range(len(input_pattern))] +
+                        ['output_%s' % i for i in range(len(output_pattern))] +
+                        ['test_output_%s' % i for i in range(len(outputs_l_j[-1][1:]))] +
+                        ['testing_error']
+                        )
+                for pattern_number in range(len(self.test_patterns)):
+                    result = (self.test_patterns[pattern_number] +
+                                all_outputs_l_j[pattern_number][-1][1:] +
+                                [testing_errors[pattern_number]])
                     io_functions.write_result_row('results/%s_testing.csv' % self.results_filename, headers, result)
-
+            
             self.testing_errors = testing_errors
 
     def __save_results(self, results_filename):
