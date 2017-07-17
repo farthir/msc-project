@@ -158,7 +158,10 @@ class Standardiser(object):
 
     def __scale(self, variable_data, multiplier):
         """Method that applies linear scaling to data"""
-        return [float(item * multiplier) for item in variable_data]
+        # convert values in list to float
+        variable_data = [float(item) for item in variable_data]
+
+        return [item * multiplier for item in variable_data]
 
     def __is_scale_type(self, variable_type):
         """Method that checks to see if variable_type is a float"""
@@ -184,6 +187,44 @@ class Destandardiser(object):
 
         self.variables_mean = variables_mean
         self.variables_std = variables_std
+
+    def destandardise_single(self, pattern_number):
+        """Method to destandardise a single pattern."""
+
+        # loop through columns in data (currently ordered by row in list)
+        # two counters, one for input structure and one for output structure
+        variable_position_out = 0
+
+        pattern_out = []
+
+        for variable_position_in in range(len(self.variable_types)):
+            variable_data = [self.patterns_in[pattern_number][variable_position_in]]
+            variable_type = self.variable_types[variable_position_in]
+
+            # usually one standardised variable for one variable
+            variable_count = 1
+
+            if self.__is_scale_type(variable_type):
+                destandardised_data = self.__descale(variable_data, float(variable_type))
+            elif variable_type == 'numeric':
+                destandardised_data = self.__destandardise_numeric(
+                    variable_data,
+                    self.variables_mean[variable_position_out],
+                    self.variables_std[variable_position_out])
+            elif variable_type == 'binary':
+                destandardised_data = self.__destandardise_binary(variable_data)
+            elif variable_type == 'none':
+                # serves as a way to disable destandardisation for variables (e.g. on output)
+                destandardised_data = variable_data
+            else:
+                raise VariableTypeError(
+                    'ERROR: variable type "' + variable_type + '" not implemented.')
+
+            pattern_out.append(destandardised_data)
+
+            variable_position_out += variable_count
+
+        return pattern_out
 
     def destandardise_by_type(self):
         """Method to destandardise all patterns in class instance."""

@@ -2,13 +2,12 @@
 import json
 import progressbar
 
-import matplotlib.pyplot as plt
-
 import mlp_functions
 import io_functions
 import data_processing
 
 class MLPNetwork(object):
+    """Class to build an MLP network using gradient descent backpropagation learning"""
     def __init__(self, unified_filename, results_filename):
         self.results_filename = results_filename
 
@@ -96,6 +95,8 @@ class MLPNetwork(object):
 
             test_standardiser.standardise_by_type()
             self.test_patterns = test_standardiser.patterns_out
+
+        self.training_standardiser = training_standardiser
 
     def __initialise_network(self):
         # network initialisation
@@ -320,6 +321,24 @@ class MLPNetwork(object):
 
                 all_outputs_l_j.append(outputs_l_j)
                 testing_errors.append(testing_error)
+            
+            test_destandardiser_data = data_processing.Destandardiser(
+                self.test_patterns,
+                self.variable_types,
+                variables_mean=self.training_standardiser.variables_mean,
+                variables_std=self.training_standardiser.variables_std)
+
+            test_destandardiser_data.destandardise_by_type()
+
+            test_destandardiser_net = data_processing.Destandardiser(
+                [item[-1][1:] for item in all_outputs_l_j],
+                self.variable_types[self.params['input_dimensions']:self.last_output],
+                variables_mean=self.training_standardiser.variables_mean[
+                    self.params['input_dimensions']:self.last_output],
+                variables_std=self.training_standardiser.variables_std[
+                    self.params['input_dimensions']:self.last_output])
+
+            test_destandardiser_net.destandardise_by_type()
 
             # append testing results to file
             if self.params['save_testing']:
@@ -328,9 +347,9 @@ class MLPNetwork(object):
                         ['test_output_%s' % i for i in range(len(outputs_l_j[-1][1:]))] +
                         ['testing_error']
                         )
-                for pattern_number in range(len(self.test_patterns)):
-                    result = (self.test_patterns[pattern_number] +
-                                all_outputs_l_j[pattern_number][-1][1:] +
+                for pattern_number in range(len(test_destandardiser_data.patterns_out)):
+                    result = (test_destandardiser_data.patterns_out[pattern_number] +
+                                test_destandardiser_net.patterns_out[pattern_number] +
                                 [testing_errors[pattern_number]])
                     io_functions.write_result_row('results/%s_testing.csv' % self.results_filename, headers, result)
             
