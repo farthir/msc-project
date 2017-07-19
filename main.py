@@ -55,13 +55,13 @@ def main():
         print('Average training error at end of all epochs: ', average_training_error_success)
 
         if sys.argv[4] == '1':
-            plt.subplot(211)
+            plt.subplot(311)
             plt.title('End training error for all networks')
             plt.xlabel('Error')
             plt.ylabel('Number')
             plt.hist(network_training_errors, 10)
 
-            plt.subplot(212)
+            plt.subplot(312)
             plt.title('Training error progress for final network')
             plt.xlabel('Epoch')
             plt.ylabel('Error')
@@ -69,6 +69,13 @@ def main():
                 plt.plot(network.training_errors, 'b', network.validation_errors, 'r--')
             else:
                 plt.plot(network.training_errors, 'b')
+
+            if network.params['testing']:
+                plt.subplot(313)
+                plt.title('Test errors for final network')
+                plt.xlabel('Error')
+                plt.ylabel('Number')
+                plt.hist(network.testing_errors, 10)
 
             plt.ylim(ymin=0)
             plt.tight_layout()

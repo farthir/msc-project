@@ -252,7 +252,6 @@ class MLPNetwork(object):
                 if validation_error < validation_error_best:
                     validation_error_best = validation_error
                     best_weights_l_i_j = list(self.weights_l_i_j)
-                    training_error_best = training_error
                     epoch_best = epoch
 
                 validation_errors.append(validation_error)
@@ -275,18 +274,54 @@ class MLPNetwork(object):
             # finally, increment the epoch
             epoch += 1
 
+        # reverse effects of standardiser on error when we only have a single output
+        # only modifies error with numeric standardised outputs and scaled outputs
+        if self.params['output_dimensions'] == 1:
+            if data_processing.is_scale_type(self.variable_types[-1]):
+                training_destandardiser_error = data_processing.Destandardiser(
+                    [[item] for item in training_errors],
+                    [self.variable_types[-1]])
+                training_destandardiser_error.destandardise_by_type()
+                training_errors = [
+                    item[0] for item in training_destandardiser_error.patterns_out]
+                if self.params['validating']:
+                    validation_destandardiser_error = data_processing.Destandardiser(
+                        [[item] for item in validation_errors],
+                        [self.variable_types[-1]])
+                    validation_destandardiser_error.destandardise_by_type()
+                    validation_errors = [
+                        item[0] for item in validation_destandardiser_error.patterns_out]
+            elif self.variable_types[-1] == 'numeric':
+                training_destandardiser_error = data_processing.Destandardiser(
+                    [[item] for item in training_errors],
+                    [self.variable_types[-1]],
+                    variables_mean=[0],
+                    variables_std=[self.training_standardiser.variables_std[-1]])
+                training_destandardiser_error.destandardise_by_type()
+                training_errors = [
+                    item[0] for item in training_destandardiser_error.patterns_out]
+                if self.params['validating']:
+                    validation_destandardiser_error = data_processing.Destandardiser(
+                        [[item] for item in validation_errors],
+                        [self.variable_types[-1]],
+                        variables_mean=[0],
+                        variables_std=[self.training_standardiser.variables_std[-1]])
+                    validation_destandardiser_error.destandardise_by_type()
+                    validation_errors = [
+                        item[0] for item in validation_destandardiser_error.patterns_out]
+
         # data for summary results
         self.training_errors = training_errors
         self.epoch_end = epoch - 1 # subtract one as increment occurs before while loop ends
         self.epoch_target_training_error = epoch_target_training_error
-        self.training_error_end = training_error
+        self.training_error_end = training_errors[-1]
 
         if self.params['validating']:
             self.best_weights_l_i_j = best_weights_l_i_j
             self.validation_errors = validation_errors
-            self.validation_error_end = validation_error
-            self.training_error_best = training_error_best
-            self.validation_error_best = validation_error_best
+            self.validation_error_end = validation_errors[-1]
+            self.training_error_best = training_errors[epoch_best - 1] # epoch indexed from 1
+            self.validation_error_best = validation_errors[epoch_best - 1] # epoch indexed from 1
             self.epoch_best = epoch_best
 
         # write out detailed results if specified
