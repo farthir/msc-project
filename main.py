@@ -57,5 +57,6 @@ else:
         else:
             plt.plot(net.training_errors, 'b')
 
+        plt.autoscale(False)
         plt.savefig('results/%s.svg' % sys.argv[2])
         plt.show()

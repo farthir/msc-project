@@ -180,7 +180,7 @@ class Destandardiser(object):
     # choose from numeric, category, binary, none, or float type for each column
 
     def __init__(
-            self, patterns_in, variable_types, variables_mean, variables_std):
+            self, patterns_in, variable_types, variables_mean=None, variables_std=None):
         self.patterns_in = patterns_in
         self.patterns_out = copy.deepcopy(patterns_in)
         self.variable_types = variable_types
@@ -204,7 +204,7 @@ class Destandardiser(object):
             # usually one standardised variable for one variable
             variable_count = 1
 
-            if self.__is_scale_type(variable_type):
+            if is_scale_type(variable_type):
                 destandardised_data = self.__descale(variable_data, float(variable_type))
             elif variable_type == 'numeric':
                 destandardised_data = self.__destandardise_numeric(
@@ -239,7 +239,7 @@ class Destandardiser(object):
             # usually one standardised variable for one variable
             variable_count = 1
 
-            if self.__is_scale_type(variable_type):
+            if is_scale_type(variable_type):
                 destandardised_data = self.__descale(variable_data, float(variable_type))
             elif variable_type == 'numeric':
                 destandardised_data = self.__destandardise_numeric(
@@ -276,10 +276,10 @@ class Destandardiser(object):
         """Method that reverses the linear scaling applied during data preprocessing"""
         return [float(item / multiplier) for item in variable_data]
 
-    def __is_scale_type(self, variable_type):
-        """Method that checks to see if variable_type is a float"""
-        try:
-            float(variable_type)
-            return True
-        except ValueError:
-            return False
+def is_scale_type(variable_type):
+    """Utility method that checks to see if variable_type is a float"""
+    try:
+        float(variable_type)
+        return True
+    except ValueError:
+        return False

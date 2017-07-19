@@ -322,6 +322,7 @@ class MLPNetwork(object):
                 all_outputs_l_j.append(outputs_l_j)
                 testing_errors.append(testing_error)
             
+            # remove standardisation effects from results
             test_destandardiser_data = data_processing.Destandardiser(
                 self.test_patterns,
                 self.variable_types,
@@ -340,19 +341,51 @@ class MLPNetwork(object):
 
             test_destandardiser_net.destandardise_by_type()
 
+            # reverse effects of standardiser on error when we only have a single output
+            # only modifies error with numeric standardised outputs and scaled outputs
+            if self.params['output_dimensions'] == 1:
+                if data_processing.is_scale_type(self.variable_types[-1]):
+                    test_destandardiser_error = data_processing.Destandardiser(
+                        [[item] for item in testing_errors],
+                        [self.variable_types[-1]])
+                    test_destandardiser_error.destandardise_by_type()
+                elif self.variable_types[-1] == 'numeric':
+                    test_destandardiser_error = data_processing.Destandardiser(
+                        [[item] for item in testing_errors],
+                        [self.variable_types[-1]],
+                        variables_mean=[0],
+                        variables_std=[self.training_standardiser.variables_std[-1]])
+                    test_destandardiser_error.destandardise_by_type()
+                else:
+                    test_destandardiser_error = None
+            else:
+                test_destandardiser_error = None
+
             # append testing results to file
             if self.params['save_testing']:
                 headers = (['input_%s' % i for i in range(len(input_pattern))] +
-                        ['output_%s' % i for i in range(len(output_pattern))] +
-                        ['test_output_%s' % i for i in range(len(outputs_l_j[-1][1:]))] +
-                        ['testing_error']
-                        )
+                           ['output_%s' % i for i in range(len(output_pattern))] +
+                           ['test_output_%s' % i for i in range(len(outputs_l_j[-1][1:]))] +
+                           ['testing_error']
+                          )
                 for pattern_number in range(len(test_destandardiser_data.patterns_out)):
-                    result = (test_destandardiser_data.patterns_out[pattern_number] +
-                                test_destandardiser_net.patterns_out[pattern_number] +
-                                [testing_errors[pattern_number]])
-                    io_functions.write_result_row('results/%s_testing.csv' % self.results_filename, headers, result)
-            
+                    if test_destandardiser_error is not None:
+                        result = (test_destandardiser_data.patterns_out[pattern_number] +
+                                  test_destandardiser_net.patterns_out[pattern_number] +
+                                  test_destandardiser_error.patterns_out[pattern_number])
+                    else:
+                        result = (test_destandardiser_data.patterns_out[pattern_number] +
+                                  test_destandardiser_net.patterns_out[pattern_number] +
+                                  [testing_errors[pattern_number]])
+
+                    io_functions.write_result_row(
+                        'results/%s_testing.csv' % self.results_filename, headers, result)
+
+            print(self.training_standardiser.variables_mean[
+                    self.params['input_dimensions']:self.last_output])
+            print(self.training_standardiser.variables_std[
+                    self.params['input_dimensions']:self.last_output])
+
             self.testing_errors = testing_errors
 
     def __save_results(self, results_filename):
