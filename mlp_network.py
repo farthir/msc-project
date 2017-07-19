@@ -98,6 +98,22 @@ class MLPNetwork(object):
 
         self.training_standardiser = training_standardiser
 
+        # if scaling the output, adjust target training error accordingly
+        if self.params['output_dimensions'] == 1:
+            if data_processing.is_scale_type(self.variable_types[-1]):
+                target_training_error = (
+                    self.params['target_training_error'] * float(self.variable_types[-1]))
+            elif self.variable_types[-1] == 'numeric':
+                target_training_error = (
+                    self.params['target_training_error'] *
+                    self.training_standardiser.variables_std[-1])
+            else:
+                target_training_error = self.params['target_training_error']
+        else:
+            target_training_error = self.params['target_training_error']
+
+        self.target_training_error = target_training_error
+
     def __initialise_network(self):
         # network initialisation
         # set number of neurons in each layer
@@ -259,12 +275,12 @@ class MLPNetwork(object):
             # record when target training error was reached
             if not target_training_error_reached:
                 epoch_target_training_error = epoch
-                if training_error < self.params['target_training_error']:
+                if training_error < self.target_training_error:
                     target_training_error_reached = True
 
             # network training halting conditions
             if self.params['stop_at_target_training_error']:
-                if (training_error < self.params['target_training_error'] or
+                if (training_error < self.target_training_error or
                         epoch == self.params['max_epochs']):
                     repeat = False
             else:
