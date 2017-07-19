@@ -50,9 +50,9 @@ def main():
 
         print()
         print('Network architecture: ', network.neurons_l)
-        print('Percentage successful: ', percentage_successful)
-        print('Average epochs (successful): ', average_epochs_success)
-        print('Average end training error (successful): ', average_training_error_success)
+        print('Percentage reaching target training error: ', percentage_successful)
+        print('Average epochs to reach target training error: ', average_epochs_success)
+        print('Average training error at end of all epochs: ', average_training_error_success)
 
         if sys.argv[4] == '1':
             plt.subplot(211)
