@@ -1,4 +1,4 @@
-# mlp_functions module
+"""Module containing functions for an MLP network"""
 # assumes all input features preceed output(s)
 import random
 import math
@@ -6,6 +6,7 @@ import math
 import mlp_exceptions
 
 def initialise_bias(params):
+    """Function to initialise the neuron input biases to 1.0"""
     outputs_l_j = []
 
     # plus one for input layer
@@ -19,6 +20,7 @@ def initialise_bias(params):
 
 
 def initialise_weights(params, neurons_l):
+    """Function to initialise the weights randomly as specified"""
     weights_l_i_j = []
 
     if params['fixed_weight_seed'] is not None:
@@ -40,10 +42,10 @@ def initialise_weights(params, neurons_l):
                     weights_j.append(None)
                 else:
                     # add one to accomodate bias
-                    for j in range(neurons_l[l - 1] + 1):
+                    for _ in range(neurons_l[l - 1] + 1):
                         weight = (params['weight_init_mean'] +
                                   params['weight_init_range'] * (
-                                    (2 * rng.random()) - 1))
+                                      (2 * rng.random()) - 1))
                         weights_j.append(weight)
 
                 weights_i_j.append(weights_j)
@@ -53,10 +55,11 @@ def initialise_weights(params, neurons_l):
 
 
 def forward_pass(params, neurons_l, weights_l_i_j, outputs_l_j):
+    """Function which performs a forward pass through the current network"""
     L = len(neurons_l) - 1
     for l, neuron_l in enumerate(neurons_l):
         # skip first layer as it's already populated and has no neurons
-        if (l != 0):
+        if l != 0:
             for i in range(neuron_l):
                 # neuron count starts at 1
                 i += 1
@@ -67,15 +70,15 @@ def forward_pass(params, neurons_l, weights_l_i_j, outputs_l_j):
                     activation += (weights_l_i_j[l][i][j] *
                                    outputs_l_j[l-1][j])
                 # set outputs in hidden layers
-                if (l < L):
+                if l < L:
                     # apply squashing to hidden layers
                     firing_function = get_firing_function(
                         params['hidden_layers_function'])
                     outputs_l_j[l].append(firing_function(activation))
                 # set outputs in output layer
-                elif (l == L):
+                elif l == L:
                     # check output layer function
-                    if (params['output_function'] == 'linear'):
+                    if params['output_function'] == 'linear':
                         # linear output
                         outputs_l_j[l].append(activation)
                     else:
@@ -87,24 +90,31 @@ def forward_pass(params, neurons_l, weights_l_i_j, outputs_l_j):
 
 
 def get_firing_function(function_name):
+    """Helper function that returns the specified firing function"""
     if function_name == 'logistic':
         def firing_function(activation):
+            """Logistic sigmoid function"""
             return 1 / (1 + math.exp(-activation))
     elif function_name == 'logistic_derivative':
         def firing_function(activation):
+            """Logistic sigmoid derivative function"""
             return ((math.exp(-activation)) /
                     (math.pow((1 + math.exp(-activation)), 2)))
     elif function_name == 'tanh':
         def firing_function(activation):
+            """Tanh sigmoid function"""
             return math.tanh(activation)
     elif function_name == 'tanh_derivative':
         def firing_function(activation):
+            """Tanh sigmoid derivative function"""
             return 1 - math.pow(math.tanh(activation), 2)
     elif function_name == 'lecun_tanh':
         def firing_function(activation):
+            """Lecun recommended tanh sigmoid function"""
             return 1.7159 * math.tanh((2/3) * activation)
     elif function_name == 'lecun_tanh_derivative':
         def firing_function(activation):
+            """Lecun recommended tanh sigmoid derivative function"""
             return 1.14393 * (1 - math.pow(math.tanh((2/3) * activation), 2))
     else:
         print('ERROR: function type "' + function_name + '" not implemented.')
@@ -113,6 +123,7 @@ def get_firing_function(function_name):
 
 
 def update_ms_error(neurons_l, error, teacher_i, outputs_l_j):
+    """Update the mean squared error for each update"""
     # get number of output layer neurons
     L = len(neurons_l) - 1
     output_neurons = neurons_l[L]
@@ -124,6 +135,7 @@ def update_ms_error(neurons_l, error, teacher_i, outputs_l_j):
 
 
 def calculate_errors(params, neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
+    """Calculate neuron delta values"""
     L = len(neurons_l) - 1
     reversed_errors_l_i = []
     for l, neuron_l in reversed(list(enumerate(neurons_l))):
@@ -131,7 +143,7 @@ def calculate_errors(params, neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
         reversed_errors_i = []
         # indexing starts at 1 for neurons
         reversed_errors_i.append(None)
-        if (l != 0):
+        if l != 0:
             for i in range(neuron_l):
                 # neuron count starts at 1
                 i += 1
@@ -142,11 +154,11 @@ def calculate_errors(params, neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
                     activation += (weights_l_i_j[l][i][j] *
                                    outputs_l_j[l-1][j])
                 # output layer with known targets
-                if (l == L):
+                if l == L:
                     # check output layer function
                     difference = 0.0
                     difference = teacher_i[i] - outputs_l_j[l][i]
-                    if (params['output_function'] == 'linear'):
+                    if params['output_function'] == 'linear':
                         # linear output
                         reversed_errors_i.append(difference)
                     else:
@@ -168,7 +180,7 @@ def calculate_errors(params, neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
                                       weights_l_i_j[l + 1][k][i])
                     # hidden layers squashing
                     firing_function = get_firing_function(
-                       params['hidden_layers_function'] + '_derivative')
+                        params['hidden_layers_function'] + '_derivative')
                     reversed_errors_i.append(error_sum *
                                              firing_function(activation))
         reversed_errors_l_i.append(reversed_errors_i)
@@ -177,19 +189,20 @@ def calculate_errors(params, neurons_l, weights_l_i_j, teacher_i, outputs_l_j):
 
 
 def update_weights(params, neurons_l, weights_l_i_j, errors_l_i, outputs_l_j):
-        for l, neuron_l in enumerate(neurons_l):
-            # skip first layer as it has no neurons
-            if (l != 0):
-                for i in range(neuron_l):
-                    # neuron count starts at 1
-                    i += 1
-                    # plus one for bias
-                    for j in range(neurons_l[l - 1] + 1):
-                        weights_l_i_j[l][i][j] += (
-                            params['training_rate'] *
-                            errors_l_i[l][i] *
-                            outputs_l_j[l - 1][j])
-        return weights_l_i_j
+    """Weight update function that modifies weights based on neuron delta values"""
+    for l, neuron_l in enumerate(neurons_l):
+        # skip first layer as it has no neurons
+        if l != 0:
+            for i in range(neuron_l):
+                # neuron count starts at 1
+                i += 1
+                # plus one for bias
+                for j in range(neurons_l[l - 1] + 1):
+                    weights_l_i_j[l][i][j] += (
+                        params['training_rate'] *
+                        errors_l_i[l][i] *
+                        outputs_l_j[l - 1][j])
+    return weights_l_i_j
 
 def calculate_rms_error(output_function, training_error, num_output_neurons, num_patterns):
     """Cost function that calculates the rms error. Scales error depending on function used."""

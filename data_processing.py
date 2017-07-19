@@ -12,7 +12,7 @@ class VariableTypeError(ProcessingError):
     pass
 
 class NotFullyImplementedError(ProcessingError):
-    """Raise this error if there is an attempt to call functionality 
+    """Raise this error if there is an attempt to call functionality
     that is not fully implemented"""
     pass
 
@@ -52,7 +52,7 @@ class Standardiser(object):
             # usually one standardised variable for one variable
             variable_count = 1
 
-            if self.__is_scale_type(variable_type):
+            if is_scale_type(variable_type):
                 standardised_data = self.__scale(variable_data, float(variable_type))
             elif variable_type == 'numeric':
                 if self.training_data:
@@ -95,7 +95,6 @@ class Standardiser(object):
             elif variable_type == 'none':
                 # serves as a way to disable standardisation for variables (e.g. on output)
                 standardised_data = [float(item) for item in variable_data]
-                
                 if self.training_data:
                     for _ in range(variable_count):
                         self.variables_mean.append(None)
@@ -162,14 +161,6 @@ class Standardiser(object):
         variable_data = [float(item) for item in variable_data]
 
         return [item * multiplier for item in variable_data]
-
-    def __is_scale_type(self, variable_type):
-        """Method that checks to see if variable_type is a float"""
-        try:
-            float(variable_type)
-            return True
-        except ValueError:
-            return False
 
 class Destandardiser(object):
     """Class to reverse the standardisation process to produce interpretable outputs.

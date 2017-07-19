@@ -7,7 +7,7 @@ import io_functions
 import data_processing
 
 class MLPNetwork(object):
-    """Class to build an MLP network using gradient descent backpropagation learning"""
+    """Class to build an MLP network using stochastic gradient descent backpropagation learning"""
     def __init__(self, unified_filename, results_filename):
         self.results_filename = results_filename
 
@@ -20,7 +20,7 @@ class MLPNetwork(object):
         self.__testing_loop()
 
         if self.params['save_summary']:
-            self.__save_results(results_filename)
+            self.__save_summary(results_filename)
 
     def __read_parameters(self, parameters_filename):
         with open('parameters/%s.json'
@@ -105,8 +105,8 @@ class MLPNetwork(object):
         neurons_l = []
         neurons_l.append(self.params['input_dimensions'])
 
-        for l in range(len(self.params['hidden_nodes'])):
-            neurons_l.append(self.params['hidden_nodes'][l])
+        for hidden_node_index in range(len(self.params['hidden_nodes'])):
+            neurons_l.append(self.params['hidden_nodes'][hidden_node_index])
 
         # this may not always be the case but is set here
         neurons_l.append(self.params['output_dimensions'])
@@ -120,9 +120,12 @@ class MLPNetwork(object):
 
     def __backpropagation_loop(self):
         # backpropagation loop
-        epoch = 0
+        # epoch count starts at one
+        epoch = 1
         training_errors = []
         repeat = True
+        target_training_error_reached = False
+
         if self.params['validating']:
             validation_errors = []
             validation_error_best = 1000.0
@@ -130,18 +133,18 @@ class MLPNetwork(object):
             epoch_best = 0
 
         # initialise progress bar for console
-        bar = progressbar.ProgressBar(
+        progress_bar = progressbar.ProgressBar(
             maxval=self.params['max_epochs'],
             widgets=[progressbar.Bar(
                 '=', '[', ']'), ' ', progressbar.Percentage()])
-        bar.start()
+        progress_bar.start()
         while repeat:
             training_error = 0.0
-            bar.update(epoch)
+            progress_bar.update(epoch)
 
-            for p in self.training_patterns:
+            for pattern in self.training_patterns:
                 # load pattern
-                input_pattern = p[:self.params['input_dimensions']]
+                input_pattern = pattern[:self.params['input_dimensions']]
                 # set bias 'output'
                 outputs_l_j = mlp_functions.initialise_bias(self.params)
                 # add input pattern to 'output' of layer 0
@@ -153,8 +156,8 @@ class MLPNetwork(object):
                     outputs_l_j)
 
                 # update training_error
-                output_pattern = p[self.params['input_dimensions']:
-                                   self.last_output]
+                output_pattern = pattern[self.params['input_dimensions']:
+                                         self.last_output]
                 teacher_i = []
                 # account for i = 0
                 teacher_i.append(None)
@@ -189,31 +192,32 @@ class MLPNetwork(object):
                 if epoch % self.params['save_network_resolution'] == 0:
                     # append results to file
                     headers = (['epoch'] +
-                                ['weight_%s_%s_%s' % (l+1, i+1, j)
-                                    for l in range(len(self.weights_l_i_j[1:]))
-                                    for i in range(len(self.weights_l_i_j[l+1][1:]))
-                                    for j in range(len(self.weights_l_i_j[l+1][i+1]))] +
-                                ['error_%s_%s' % (l+1, i+1)
-                                    for l in range(len(errors_l_i[1:]))
-                                    for i in range(len(errors_l_i[l+1][1:]))])
+                               ['weight_%s_%s_%s' % (l+1, i+1, j)
+                                for l in range(len(self.weights_l_i_j[1:]))
+                                for i in range(len(self.weights_l_i_j[l+1][1:]))
+                                for j in range(len(self.weights_l_i_j[l+1][i+1]))] +
+                               ['error_%s_%s' % (l+1, i+1)
+                                for l in range(len(errors_l_i[1:]))
+                                for i in range(len(errors_l_i[l+1][1:]))])
 
                     result = [epoch]
                     result.extend(
                         [j for l in range(len(self.weights_l_i_j[1:]))
-                        for i in range(len(self.weights_l_i_j[l+1][1:]))
-                        for j in self.weights_l_i_j[l+1][i+1]])
+                         for i in range(len(self.weights_l_i_j[l+1][1:]))
+                         for j in self.weights_l_i_j[l+1][i+1]])
                     result.extend(
                         [i for l in range(len(errors_l_i[1:]))
-                        for i in errors_l_i[l+1][1:]])
+                         for i in errors_l_i[l+1][1:]])
 
-                    io_functions.write_result_row('results/%s_weights.csv' % self.results_filename, headers, result)
+                    io_functions.write_result_row(
+                        'results/%s_weights.csv' % self.results_filename, headers, result)
 
             if self.params['validating']:
                 validation_error = 0.0
 
-                for p in self.validation_patterns:
+                for pattern in self.validation_patterns:
                     # load pattern
-                    input_pattern = p[:self.params['input_dimensions']]
+                    input_pattern = pattern[:self.params['input_dimensions']]
                     # set bias 'output'
                     outputs_l_j = mlp_functions.initialise_bias(self.params)
                     # add input pattern to 'output' of layer 0
@@ -225,8 +229,8 @@ class MLPNetwork(object):
                         outputs_l_j)
 
                     # update validation error
-                    output_pattern = p[self.params['input_dimensions']:
-                                       self.last_output]
+                    output_pattern = pattern[self.params['input_dimensions']:
+                                             self.last_output]
 
                     teacher_i = []
                     # account for i = 0
@@ -253,14 +257,28 @@ class MLPNetwork(object):
 
                 validation_errors.append(validation_error)
 
+            # record when target training error was reached
+            if not target_training_error_reached:
+                epoch_target_training_error = epoch
+                if training_error < self.params['target_training_error']:
+                    target_training_error_reached = True
 
+            # network training halting conditions
+            if self.params['stop_at_target_training_error']:
+                if (training_error < self.params['target_training_error'] or
+                        epoch == self.params['max_epochs']):
+                    repeat = False
+            else:
+                if epoch == self.params['max_epochs']:
+                    repeat = False
+
+            # finally, increment the epoch
             epoch += 1
-            if (training_error < self.params['target_training_error'] or
-                    epoch == self.params['max_epochs']):
-                repeat = False
 
+        # data for summary results
         self.training_errors = training_errors
-        self.epoch_end = epoch
+        self.epoch_end = epoch - 1 # subtract one as increment occurs before while loop ends
+        self.epoch_target_training_error = epoch_target_training_error
         self.training_error_end = training_error
 
         if self.params['validating']:
@@ -271,16 +289,35 @@ class MLPNetwork(object):
             self.validation_error_best = validation_error_best
             self.epoch_best = epoch_best
 
+        # write out detailed results if specified
+        if self.params['save_detailed']:
+            headers = (['epoch'] +
+                       ['training_error'] +
+                       ['validation_error']
+                      )
+            for epoch_index, training_error in enumerate(training_errors):
+                result = []
+                if self.params['validating']:
+                    result.append(epoch_index + 1) # start epoch count at one
+                    result.append(training_error)
+                    result.append(validation_errors[epoch_index])
+                else:
+                    result.append(epoch_index + 1)
+                    result.append(training_error)
+
+                io_functions.write_result_row(
+                    'results/%s_detailed.csv' % self.results_filename, headers, result)
+
     def __testing_loop(self):
         # testing loop
         if self.params['testing']:
             testing_errors = []
             all_outputs_l_j = []
 
-            for p in self.test_patterns:
+            for pattern in self.test_patterns:
                 testing_error = 0.0
                 # load pattern
-                input_pattern = p[:self.params['input_dimensions']]
+                input_pattern = pattern[:self.params['input_dimensions']]
 
                 # set bias 'output'
                 outputs_l_j = mlp_functions.initialise_bias(self.params)
@@ -300,8 +337,8 @@ class MLPNetwork(object):
                         outputs_l_j)
 
                 # update test error
-                output_pattern = p[self.params['input_dimensions']:
-                                   self.last_output]
+                output_pattern = pattern[self.params['input_dimensions']:
+                                         self.last_output]
 
                 teacher_i = []
                 # account for i = 0
@@ -321,8 +358,8 @@ class MLPNetwork(object):
 
                 all_outputs_l_j.append(outputs_l_j)
                 testing_errors.append(testing_error)
-            
-            # remove standardisation effects from results
+
+            # remove standardisation effects from data
             test_destandardiser_data = data_processing.Destandardiser(
                 self.test_patterns,
                 self.variable_types,
@@ -331,6 +368,7 @@ class MLPNetwork(object):
 
             test_destandardiser_data.destandardise_by_type()
 
+            # remove standardisation effects from net info
             test_destandardiser_net = data_processing.Destandardiser(
                 [item[-1][1:] for item in all_outputs_l_j],
                 self.variable_types[self.params['input_dimensions']:self.last_output],
@@ -381,19 +419,15 @@ class MLPNetwork(object):
                     io_functions.write_result_row(
                         'results/%s_testing.csv' % self.results_filename, headers, result)
 
-            print(self.training_standardiser.variables_mean[
-                    self.params['input_dimensions']:self.last_output])
-            print(self.training_standardiser.variables_std[
-                    self.params['input_dimensions']:self.last_output])
-
             self.testing_errors = testing_errors
 
-    def __save_results(self, results_filename):
+    def __save_summary(self, results_filename):
         # save some data
         headers = ['weight_init_mean', 'weight_init_range',
                    'fixed_weight_seed', 'hidden_layers_function',
                    'output_function', 'training_rate',
                    'hidden_nodes', 'epoch_end', 'training_error_end',
+                   'epoch_target_training_error',
                    'validation_error_end', 'epoch_best',
                    'training_error_best', 'validation_error_best'
                   ]
@@ -405,11 +439,11 @@ class MLPNetwork(object):
         result.append(self.params['output_function'])
         result.append(self.params['training_rate'])
         result.append(self.params['hidden_nodes'])
+        result.extend([self.epoch_end, self.training_error_end,
+                       self.epoch_target_training_error])
+
         if self.params['validating']:
-            result.extend([self.epoch_end, self.training_error_end,
-                           self.validation_error_end, self.epoch_best,
+            result.extend([self.validation_error_end, self.epoch_best,
                            self.training_error_best, self.validation_error_best])
-        else:
-            result.extend([self.epoch_end, self.training_error_end])
         io_functions.write_result_row(
             'results/%s.csv' % results_filename, headers, result)
