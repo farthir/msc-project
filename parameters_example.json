@@ -7,7 +7,7 @@
   "output_dimensions": 1,
   "weight_init_mean": 0,
   "weight_init_range": 0.5,
-  "fixed_weight_seed": null,
+  "random_numbers_seed": null,
   "hidden_layers_function": "lecun_tanh",
   "output_function": "linear",
   "hidden_nodes": [3],

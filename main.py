@@ -29,6 +29,8 @@ def main():
         average_epochs_success = 0
         training_error_success = 0
         average_training_error_success = 0
+        testing_error_success = 0
+        average_testing_error_success = 0
 
         for network_index in range(number_networks):
             progress_bar.update(network_index)
@@ -42,17 +44,23 @@ def main():
                 number_successes += 1
                 epochs_success += network.epoch_target_training_error
                 training_error_success += network.training_error_end
+                if network.params['testing']:
+                    testing_error_success += network.average_testing_error
 
         percentage_successful = (number_successes / number_networks) * 100
         if number_successes > 0:
             average_epochs_success = epochs_success / number_successes
             average_training_error_success = training_error_success / number_successes
+            if network.params['testing']:
+                average_testing_error_success = testing_error_success / number_successes
 
         print()
         print('Network architecture: ', network.neurons_l)
         print('Percentage reaching target training error: ', percentage_successful)
         print('Average epochs to reach target training error: ', average_epochs_success)
         print('Average training error at end of all epochs: ', average_training_error_success)
+        if network.params['testing']:
+            print('Average testing error: ', average_testing_error_success)
 
         if sys.argv[4] == '1':
             plt.subplot(311)

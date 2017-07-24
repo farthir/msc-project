@@ -1,3 +1,4 @@
+"""Module containing helper functions for reading from and writing to files"""
 import csv
 import random
 
@@ -13,8 +14,8 @@ def read_patterns_structure(structure_filepath):
 
     return structure
 
-def read_patterns(data_filepath):
-
+def read_patterns(data_filepath, params):
+    """Function to read data patterns from a file"""
     # num_output_neurons = num_output_dimensions -- no! -- depends on
     # whether classifier or regression and then if classifier, the encoding
 
@@ -24,14 +25,15 @@ def read_patterns(data_filepath):
         for row in reader:
             patterns.append(row)
 
-        # randomise csv input to make sure training/validation sets are truely
-        # random
-        random.shuffle(patterns)
+        # randomise csv input to make sure training/validation sets are truely random
+        rng = random.Random(params['random_numbers_seed'])
+        rng.shuffle(patterns)
 
     return patterns
 
 
 def write_result_row(results_filepath, headers, result):
+    """Function to write a single row to a file"""
     existing_path = Path(results_filepath)
 
     if existing_path.is_file():
@@ -44,9 +46,3 @@ def write_result_row(results_filepath, headers, result):
             if headers is not None:
                 writer.writerow(headers)
             writer.writerow(result)
-
-
-'''
-def write_network(network_filepath, results):
-    # save the best network weights
-'''

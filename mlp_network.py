@@ -17,6 +17,7 @@ class MLPNetwork(object):
         self.__data_preprocessing()
         self.__initialise_network()
         self.__backpropagation_loop()
+        self.average_testing_error = 0
         self.__testing_loop()
 
         if self.params['save_summary']:
@@ -33,12 +34,12 @@ class MLPNetwork(object):
 
     def __read_data(self, data_filename):
         # read in training/validation patterns
-        self.patterns = io_functions.read_patterns('data/%s.csv' % data_filename)
+        self.patterns = io_functions.read_patterns('data/%s.csv' % data_filename, self.params)
 
         # read in test patterns
         if self.params['testing']:
             self.test_patterns = io_functions.read_patterns('data/%s_test.csv'
-                                                            % data_filename)
+                                                            % data_filename, self.params)
 
         # useful variable
         self.last_output = (self.params['input_dimensions'] + self.params['output_dimensions'])
@@ -470,31 +471,35 @@ class MLPNetwork(object):
                     io_functions.write_result_row(
                         'results/%s_testing.csv' % self.results_filename, headers, result)
 
+            # calculate average testing error
+            self.average_testing_error = sum(testing_errors)/float(len(testing_errors))
+
             self.testing_errors = testing_errors
 
     def __save_summary(self, results_filename):
         # save some data
         headers = ['weight_init_mean', 'weight_init_range',
-                   'fixed_weight_seed', 'hidden_layers_function',
+                   'random_numbers_seed', 'hidden_layers_function',
                    'output_function', 'training_rate',
                    'hidden_nodes', 'epoch_end', 'training_error_end',
-                   'epoch_target_training_error',
+                   'epoch_target_training_error', 'average_testing_error',
                    'validation_error_end', 'epoch_best',
                    'training_error_best', 'validation_error_best'
                   ]
         result = []
         result.append(self.params['weight_init_mean'])
         result.append(self.params['weight_init_range'])
-        result.append(self.params['fixed_weight_seed'])
+        result.append(self.params['random_numbers_seed'])
         result.append(self.params['hidden_layers_function'])
         result.append(self.params['output_function'])
         result.append(self.params['training_rate'])
         result.append(self.params['hidden_nodes'])
         result.extend([self.epoch_end, self.training_error_end,
-                       self.epoch_target_training_error])
+                       self.epoch_target_training_error, self.average_testing_error])
 
         if self.params['validating']:
             result.extend([self.validation_error_end, self.epoch_best,
                            self.training_error_best, self.validation_error_best])
+
         io_functions.write_result_row(
             'results/%s.csv' % results_filename, headers, result)

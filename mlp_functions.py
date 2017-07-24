@@ -23,8 +23,8 @@ def initialise_weights(params, neurons_l):
     """Function to initialise the weights randomly as specified"""
     weights_l_i_j = []
 
-    if params['fixed_weight_seed'] is not None:
-        rng = random.Random(params['fixed_weight_seed'])
+    if params['random_numbers_seed'] is not None:
+        rng = random.Random(params['random_numbers_seed'])
     else:
         rng = random.Random()
 
