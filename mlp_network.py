@@ -102,11 +102,13 @@ class MLPNetwork(object):
         # if scaling the output, adjust target training error accordingly
         if self.params['output_dimensions'] == 1:
             if data_processing.is_scale_type(self.variable_types[-1]):
+                # to add effect of scalar, multiply by scale value
                 target_training_error = (
                     self.params['target_training_error'] * float(self.variable_types[-1]))
             elif self.variable_types[-1] == 'numeric':
+                # to add effect of numeric standardisation, divide by standard deviation
                 target_training_error = (
-                    self.params['target_training_error'] *
+                    self.params['target_training_error'] /
                     self.training_standardiser.variables_std[-1])
             else:
                 target_training_error = self.params['target_training_error']
