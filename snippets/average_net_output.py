@@ -43,6 +43,7 @@ def main():
     plt.ylabel('Force')
     plt.scatter(new_df['input_1'], new_df['output_0'], color='r', s=1)
     plt.scatter(new_df['input_1'], new_df['test_output_0'], color='g', s=1)
+    plt.ylim(ymin=0)
     plt.savefig('results/%s_average.svg' % input_filename)
     plt.show()
 
