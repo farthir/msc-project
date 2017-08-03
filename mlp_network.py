@@ -422,7 +422,7 @@ class MLPNetwork(object):
 
             test_destandardiser_data.destandardise_by_type()
 
-            # remove standardisation effects from net info
+            # remove standardisation effects from net outputs
             test_destandardiser_net = data_processing.Destandardiser(
                 [item[-1][1:] for item in all_outputs_l_j],
                 self.variable_types[self.params['input_dimensions']:self.last_output],
@@ -474,9 +474,14 @@ class MLPNetwork(object):
                         'results/%s_testing.csv' % self.results_filename, headers, result)
 
             # calculate average testing error
-            self.average_testing_error = sum(testing_errors)/float(len(testing_errors))
-
-            self.testing_errors = testing_errors
+            if test_destandardiser_error is not None:
+                self.average_testing_error = (
+                    sum([item[0] for item in test_destandardiser_error.patterns_out]) /
+                    float(len(testing_errors)))
+                self.testing_errors = [item[0] for item in test_destandardiser_error.patterns_out]
+            else:
+                self.average_testing_error = sum(testing_errors)/float(len(testing_errors))
+                self.testing_errors = testing_errors
 
     def __save_summary(self, results_filename):
         # save some data

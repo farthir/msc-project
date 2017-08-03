@@ -41,9 +41,12 @@ def main():
 
     plt.xlabel('Horizontal Displacement')
     plt.ylabel('Force')
-    plt.scatter(new_df['input_1'], new_df['output_0'], color='r', s=1)
-    plt.scatter(new_df['input_1'], new_df['test_output_0'], color='g', s=1)
-    plt.ylim(ymin=0)
+    outplt = plt.scatter(new_df['input_1'], new_df['output_0'], color='r', s=1, alpha=.5)
+    testoutplt = plt.scatter(new_df['input_1'], new_df['test_output_0'], color='g', s=1, alpha=.5)
+    plt.ylim(ymin=0, ymax=6)
+    legend = plt.legend(handles=[outplt, testoutplt])
+    legend.legendHandles[0]._sizes = [30]
+    legend.legendHandles[1]._sizes = [30]
     plt.savefig('results/%s_average.svg' % input_filename)
     plt.show()
 
