@@ -1,5 +1,5 @@
 """Module containing functions for an MLP network"""
-# assumes all input features preceed output(s)
+# assumes all input features precede output(s)
 import random
 import math
 
@@ -41,7 +41,7 @@ def initialise_weights(params, neurons_l):
                 if i == 0:
                     weights_j.append(None)
                 else:
-                    # add one to accomodate bias
+                    # add one to accommodate bias
                     for _ in range(neurons_l[l - 1] + 1):
                         weight = (params['weight_init_mean'] +
                                   params['weight_init_range'] * (

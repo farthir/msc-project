@@ -54,6 +54,7 @@ def main():
             if network.params['testing']:
                 average_testing_error_success = testing_error_success / number_successes
 
+        # print out vital network stats
         print()
         print('Network architecture: ', network.neurons_l)
         print('Percentage reaching target training error: ', percentage_successful)
@@ -62,6 +63,7 @@ def main():
         if network.params['testing']:
             print('Average testing error: ', average_testing_error_success)
 
+        # visualise training progress
         if sys.argv[4] == '1':
             plt.subplot(311)
             plt.title('End training error for all networks')
