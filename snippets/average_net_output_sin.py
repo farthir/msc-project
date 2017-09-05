@@ -1,7 +1,7 @@
 import sys
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
 
 def main():
     input_filename = sys.argv[1]
@@ -36,17 +36,24 @@ def main():
         new_df = new_df.append(row, ignore_index=True)
 
     new_df.to_csv('results/%s_average.csv' % input_filename, index=False)
-
     new_df.columns = ['input_0', 'target', 'test', 'error']
+    
+    font = {'family' : 'DejaVu Sans',
+    'weight' : 'normal',
+    'size'   : 14}
+
+    rcParams.update({'figure.autolayout': True})
+    
+    plt.figure()
+    plt.rc('font', **font)
     plt.xlabel('x')
     plt.ylabel('sin(x)')
-    outplt = plt.scatter(new_df['input_0'], new_df['target'], color='darkred', s=3, alpha=1)
-    testoutplt = plt.scatter(new_df['input_0'], new_df['test'], color='b', s=3, alpha=1)
-
+    outplt = plt.scatter(new_df['input_0'], new_df['target'], color='darkred', s=10, alpha=1)
+    testoutplt = plt.scatter(new_df['input_0'], new_df['test'], color='c', s=5, alpha=1)
     legend = plt.legend(handles=[outplt, testoutplt])
     legend.legendHandles[0]._sizes = [30]
     legend.legendHandles[1]._sizes = [30]
-    plt.savefig('results/%s_average.svg' % input_filename)
+    plt.savefig('results/%s_average.pdf' % input_filename)
     plt.show()
 
 if __name__ == "__main__":

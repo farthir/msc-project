@@ -1,8 +1,8 @@
 import sys
 import math
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
 
 def main():
     input_filename = sys.argv[1]
@@ -44,19 +44,33 @@ def main():
     font = {'family' : 'DejaVu Sans',
     'weight' : 'normal',
     'size'   : 14}
+
+    rcParams.update({'figure.autolayout': True})
     
-    plt.figure(1)
+    plt.figure()
     plt.rc('font', **font)
     plt.ylim(ymin=0, ymax=max_force)
-    plt.xlabel('Vertical Displacement')
-    plt.ylabel('Force')
+    plt.xlabel('Vertical Displacement (mm)')
+    plt.ylabel('Force (kN)')
     outplt = plt.scatter(new_df['input_1'], new_df['target'], color='darkred', s=10, alpha=1)
-    testoutplt = plt.scatter(new_df['input_1'], new_df['test'], color='b', s=10, alpha=1)
-    plt.ylim(ymin=0)
+    testoutplt = plt.scatter(new_df['input_1'], new_df['test'], color='c', s=5, alpha=1)
     legend = plt.legend(handles=[outplt, testoutplt])
     legend.legendHandles[0]._sizes = [30]
     legend.legendHandles[1]._sizes = [30]
-    plt.savefig('results/%s_average.eps' % input_filename)
+    plt.savefig('results/%s_average_v.pdf' % input_filename)
+    plt.show()
+
+    plt.figure()
+    plt.rc('font', **font)
+    plt.ylim(ymin=0, ymax=max_force)
+    plt.xlabel('Horizontal Displacement (mm)')
+    plt.ylabel('Force (kN)')
+    outplt = plt.scatter(new_df['input_0'], new_df['target'], color='darkred', s=10, alpha=1)
+    testoutplt = plt.scatter(new_df['input_0'], new_df['test'], color='c', s=5, alpha=1)
+    legend = plt.legend(handles=[outplt, testoutplt])
+    legend.legendHandles[0]._sizes = [30]
+    legend.legendHandles[1]._sizes = [30]
+    plt.savefig('results/%s_average_h.pdf' % input_filename)
     plt.show()
 
 if __name__ == "__main__":

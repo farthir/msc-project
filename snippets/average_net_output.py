@@ -39,8 +39,8 @@ def main():
 
     new_df.to_csv('results/%s_average.csv' % input_filename, index=False)
 
-    plt.xlabel('Horizontal Displacement')
-    plt.ylabel('Force')
+    plt.xlabel('Horizontal Displacement (mm)')
+    plt.ylabel('Force (kN)')
     outplt = plt.scatter(new_df['input_1'], new_df['output_0'], color='r', s=1, alpha=.5)
     testoutplt = plt.scatter(new_df['input_1'], new_df['test_output_0'], color='g', s=1, alpha=.5)
     plt.ylim(ymin=0, ymax=6)
