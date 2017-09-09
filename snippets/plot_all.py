@@ -26,8 +26,10 @@ def main():
     plt.xlabel('Vertical Displacement (mm)')
     plt.ylabel('Force (kN)')
     for prop in properties:
-        label = '$\\bar{\\rho} = %s$' % prop
+        label = '$e/l = %s$' % prop
         plt_df = df[df['property'] == prop]
+        if prop == 0:
+            prop = 0.9
         plt.scatter(plt_df['vertical'], plt_df['force'], label=label, s=10, c=cm.Set1(prop))
 
     legend = plt.legend()
@@ -39,8 +41,10 @@ def main():
     plt.xlabel('Horizontal Displacement (mm)')
     plt.ylabel('Force (kN)')
     for prop in properties:
-        label = '$\\bar{\\rho} = %s$' % prop
+        label = '$e/l = %s$' % prop
         plt_df = df[df['property'] == prop]
+        if prop == 0:
+            prop = 0.9
         plt.scatter(plt_df['horizontal'], plt_df['force'], label=label, s=10, c=cm.Set1(prop))
 
     legend = plt.legend()
