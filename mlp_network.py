@@ -64,10 +64,6 @@ class MLPNetwork(object):
             self.training_patterns = self.patterns
 
         # standardise the data
-        # WARN: Categorical standardisation is not implemented fully.
-        #       Categories need to be found across whole pattern set and proper
-        #       handling for test set if new categories are found as well as
-        #       totals for number of inputs and outputs.
         # training patterns
         training_standardiser = data_processing.Standardiser(
             self.training_patterns, self.variable_types)
